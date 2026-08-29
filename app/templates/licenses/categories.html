@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "includes/macros.html" import field %}
+{% block title %}Categories - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Software Categories</h1>
+<div class="row g-3">
+  <div class="col-md-4">
+    <div class="card">
+      <div class="card-header">Add category</div>
+      <div class="card-body">
+        <form method="post" novalidate>
+          {{ form.hidden_tag() }}
+          {{ field(form.name) }}
+          {{ form.submit(class="btn btn-primary btn-sm") }}
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-8">
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Category</th><th># Software</th><th></th></tr></thead>
+          <tbody>
+            {% for c in categories %}
+            <tr>
+              <td>{{ c.name }}</td>
+              <td>{{ c.software | length }}</td>
+              <td class="text-end">
+                <form method="post" action="{{ url_for('licenses.delete_category', id=c.id) }}" onsubmit="return confirm('Delete this category?');">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted text-center py-3">No categories yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

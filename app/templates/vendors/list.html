@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Vendors - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Vendors</h1>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <a href="{{ url_for('vendors.add_vendor') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Vendor</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-4">
+      <input type="search" name="q" class="form-control form-control-sm" placeholder="Search vendors…" value="{{ request.args.get('q', '') }}">
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Search</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Vendor</th><th>Support Email</th><th>Account Manager</th><th># Software</th><th>Annual Spend</th></tr></thead>
+      <tbody>
+        {% for v in vendors %}
+        <tr>
+          <td><a href="{{ url_for('vendors.view_vendor', id=v.id) }}">{{ v.name }}</a></td>
+          <td>{{ v.support_email or '—' }}</td>
+          <td>{{ v.account_manager or '—' }}</td>
+          <td>{{ v.software | length }}</td>
+          <td>{{ v.total_annual_spend | money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-center py-4">No vendors yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

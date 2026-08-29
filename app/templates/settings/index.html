@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% from "includes/macros.html" import field %}
+{% block title %}Settings - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Settings</h1>
+<div class="card">
+  <div class="card-header">License Status Thresholds</div>
+  <div class="card-body">
+    <p class="text-muted small">Controls when a license moves between Active, Upcoming, Warning, Critical and Expired across the dashboard, reports and notifications.</p>
+    <form method="post" novalidate>
+      {{ form.hidden_tag() }}
+      <div class="row">
+        {{ field(form.critical_days, "col-md-4") }}
+        {{ field(form.warning_days, "col-md-4") }}
+        {{ field(form.upcoming_days, "col-md-4") }}
+        {{ field(form.high_utilization_pct, "col-md-6") }}
+        {{ field(form.over_allocated_pct, "col-md-6") }}
+      </div>
+      {{ form.submit(class="btn btn-primary") }}
+    </form>
+  </div>
+</div>
+{% endblock %}

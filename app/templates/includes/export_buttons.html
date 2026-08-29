@@ -1,0 +1,6 @@
+{% set export_args = dict(request.view_args, **request.args.to_dict()) %}
+<div class="btn-group btn-group-sm" role="group" aria-label="Export report">
+  <a href="{{ url_for(request.endpoint, **dict(export_args, format='csv')) }}" class="btn btn-outline-secondary">CSV</a>
+  <a href="{{ url_for(request.endpoint, **dict(export_args, format='excel')) }}" class="btn btn-outline-secondary">Excel</a>
+  <a href="{{ url_for(request.endpoint, **dict(export_args, format='pdf')) }}" class="btn btn-outline-secondary">PDF</a>
+</div>

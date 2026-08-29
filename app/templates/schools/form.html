@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% from "includes/macros.html" import field %}
+{% block title %}{{ 'Edit' if school else 'Add' }} School - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">{{ 'Edit' if school else 'Add' }} School</h1>
+<div class="card"><div class="card-body">
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row">
+      {{ field(form.name, "col-md-6") }}
+      {{ field(form.code, "col-md-6") }}
+      {{ field(form.school_type, "col-md-6") }}
+      {{ field(form.grades, "col-md-6") }}
+      {{ field(form.principal, "col-md-6") }}
+      {{ field(form.student_count, "col-md-6") }}
+      {{ field(form.address, "col-12") }}
+      {{ field(form.is_active, "col-12") }}
+    </div>
+    <div class="d-flex gap-2">
+      {{ form.submit(class="btn btn-primary") }}
+      <a href="{{ url_for('schools.list_schools') }}" class="btn btn-outline-secondary">Cancel</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

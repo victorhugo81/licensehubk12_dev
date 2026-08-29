@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}Import Preview - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Import Preview — {{ filename }}</h1>
+
+{% if preview.column_errors %}
+<div class="alert alert-danger">
+  {% for err in preview.column_errors %}<div>{{ err }}</div>{% endfor %}
+</div>
+<a href="{{ url_for('imports.upload') }}" class="btn btn-outline-secondary">Try again</a>
+{% else %}
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ preview.total }}</div><div class="stat-label">Records Found</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value text-success">{{ preview.valid }}</div><div class="stat-label">Valid</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value" style="color: var(--status-warning);">{{ preview.warnings }}</div><div class="stat-label">Warnings</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value text-danger">{{ preview.errors }}</div><div class="stat-label">Errors</div></div></div>
+</div>
+
+<div class="card mb-3">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Row</th><th>Software</th><th>Vendor</th><th>School</th><th>Total</th><th>Assigned</th><th>Expiration</th><th>Status</th><th>Messages</th></tr></thead>
+      <tbody>
+        {% for r in preview.rows %}
+        <tr class="{{ 'table-danger' if r.status == 'error' else 'table-warning' if r.status == 'warning' else '' }}">
+          <td>{{ r.row_number }}</td>
+          <td>{{ r.data.software }}</td>
+          <td>{{ r.data.vendor }}</td>
+          <td>{{ r.data.school }}</td>
+          <td>{{ r.data.total_licenses }}</td>
+          <td>{{ r.data.assigned_licenses }}</td>
+          <td>{{ r.data.expiration_date }}</td>
+          <td><span class="badge {{ 'text-bg-danger' if r.status == 'error' else 'text-bg-warning' if r.status == 'warning' else 'text-bg-success' }}">{{ r.status }}</span></td>
+          <td class="small">{{ r.messages | join('; ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="d-flex gap-2">
+  <form method="post" action="{{ url_for('imports.commit') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary" {{ 'disabled' if preview.valid + preview.warnings == 0 }}>
+      Import {{ preview.valid + preview.warnings }} record(s)
+    </button>
+  </form>
+  <form method="post" action="{{ url_for('imports.cancel') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-outline-secondary">Cancel</button>
+  </form>
+</div>
+{% endif %}
+{% endblock %}

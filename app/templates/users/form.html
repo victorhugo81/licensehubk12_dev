@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "includes/macros.html" import field %}
+{% block title %}{{ 'Edit' if user else 'Add' }} User - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">{{ 'Edit' if user else 'Add' }} User</h1>
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="card"><div class="card-body">
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="row">
+          {{ field(form.first_name, "col-md-6") }}
+          {{ field(form.last_name, "col-md-6") }}
+          {{ field(form.email, "col-md-6") }}
+          {{ field(form.role_id, "col-md-6") }}
+          {{ field(form.school_id, "col-md-6") }}
+          {{ field(form.password, "col-md-6") }}
+          {{ field(form.is_active_account, "col-12") }}
+        </div>
+        <p class="text-muted small">{% if user %}Leave password blank to keep the current password.{% else %}Minimum 10 characters.{% endif %}</p>
+        <div class="d-flex gap-2">
+          {{ form.submit(class="btn btn-primary") }}
+          <a href="{{ url_for('users.list_users') }}" class="btn btn-outline-secondary">Cancel</a>
+        </div>
+      </form>
+    </div></div>
+  </div>
+  {% if user %}
+  <div class="col-lg-4">
+    <div class="card">
+      <div class="card-header">API Access</div>
+      <div class="card-body">
+        <p class="small text-muted">Bearer token for the JSON API. Regenerating invalidates the previous key immediately.</p>
+        {% if user.api_key %}<code class="small d-block mb-2 text-break">{{ user.api_key }}</code>{% else %}<p class="small mb-2">No API key generated yet.</p>{% endif %}
+        <form method="post" action="{{ url_for('users.regenerate_api_key', id=user.id) }}" onsubmit="return confirm('Regenerate this API key?');">
+          <button class="btn btn-sm btn-outline-secondary">Regenerate key</button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

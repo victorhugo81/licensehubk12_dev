@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}Import Software CSV - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Import Software from CSV</h1>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Upload file</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.file.label(class="form-label") }}
+            {{ form.file(class="form-control") }}
+            {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          {{ form.submit(class="btn btn-primary") }}
+          <a href="{{ url_for('imports.history') }}" class="btn btn-outline-secondary">View import history</a>
+        </form>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Expected columns</div>
+      <div class="card-body">
+        <p class="small text-muted">The CSV must include these columns (header row required):</p>
+        <pre class="bg-body-secondary p-2 rounded small">software,vendor,school,total_licenses,assigned_licenses,expiration_date,annual_cost
+IXL,IXL,Calexico High School,1000,950,2027-07-31,25000</pre>
+        <p class="small text-muted mb-0">Every row is validated before anything is written to the database. Rows with errors are never imported; rows with warnings are imported and flagged for review.</p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

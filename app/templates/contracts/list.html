@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Contracts - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Contracts</h1>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <a href="{{ url_for('contracts.add_contract') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Contract</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-4"><input type="search" name="q" class="form-control form-control-sm" placeholder="Contract number…" value="{{ request.args.get('q', '') }}"></div>
+    <div class="col-md-3">
+      <select name="vendor_id" class="form-select form-select-sm">
+        <option value="">All vendors</option>
+        {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if request.args.get('vendor_id', type=int) == v.id }}>{{ v.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Contract #</th><th>Vendor</th><th>Software</th><th>End Date</th><th>Amount</th><th>Auto Renew</th></tr></thead>
+      <tbody>
+        {% for c in contracts %}
+        <tr class="{{ 'table-danger' if c.days_until_end < 0 else 'table-warning' if c.days_until_end <= 30 else '' }}">
+          <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.contract_number }}</a></td>
+          <td>{{ c.vendor.name }}</td>
+          <td>{{ c.software.name if c.software else '—' }}</td>
+          <td>{{ c.end_date | dateformat }}</td>
+          <td>{{ c.contract_amount | money }}</td>
+          <td>{% if c.auto_renewal %}<i class="bi bi-check-circle text-success"></i>{% else %}<i class="bi bi-dash-circle text-muted"></i>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted text-center py-4">No contracts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

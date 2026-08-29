@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Notifications - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Notifications</h1>
+  <form method="post" action="{{ url_for('notifications.mark_all_read') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button class="btn btn-outline-secondary btn-sm">Mark all read</button>
+  </form>
+</div>
+
+<ul class="nav nav-pills mb-3">
+  <li class="nav-item"><a class="nav-link {{ 'active' if not unread_only }}" href="{{ url_for('notifications.index') }}">All</a></li>
+  <li class="nav-item"><a class="nav-link {{ 'active' if unread_only }}" href="{{ url_for('notifications.index', unread=1) }}">Unread</a></li>
+</ul>
+
+<div class="card">
+  <div class="list-group list-group-flush">
+    {% for n in notifications %}
+    <div class="list-group-item d-flex justify-content-between align-items-start {{ 'bg-body-secondary' if not n.is_read }}">
+      <div class="d-flex gap-3">
+        <span class="alert-dot {{ n.severity }} mt-1"></span>
+        <div>
+          <div class="fw-semibold small">{{ n.title }}</div>
+          <div class="small text-muted">{{ n.message }}</div>
+          <div class="small text-muted-soft">{{ n.created_at | timesince }}</div>
+        </div>
+      </div>
+      {% if not n.is_read %}
+      <form method="post" action="{{ url_for('notifications.mark_read', id=n.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="btn btn-sm btn-outline-secondary">Mark read</button>
+      </form>
+      {% endif %}
+    </div>
+    {% else %}
+    <div class="list-group-item text-center text-muted py-4">No notifications.</div>
+    {% endfor %}
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

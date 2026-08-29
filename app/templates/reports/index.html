@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Reports - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Reports</h1>
+<div class="row g-3">
+  {% set reports = [
+    ('reports.inventory', 'bi-collection', 'License Inventory', 'Every software title in the district, with license counts and status.'),
+    ('reports.expiring', 'bi-hourglass-split', 'Expiring Licenses', 'Filterable by 30, 60 or 90 days out.'),
+    ('reports.utilization', 'bi-graph-up', 'License Utilization', 'Assigned vs. available licenses per title.'),
+    ('reports.spending', 'bi-cash-coin', 'Software Spending', 'Annual cost and cost-per-license by software.'),
+    ('reports.school_allocation', 'bi-building', 'School Allocation', 'License counts allocated to each school.'),
+    ('reports.vendor_spending', 'bi-shop', 'Vendor Spending', 'Total annual spend grouped by vendor.'),
+  ] %}
+  {% for endpoint, icon, title, desc in reports %}
+  <div class="col-md-6 col-lg-4">
+    <a href="{{ url_for(endpoint) }}" class="text-decoration-none">
+      <div class="card h-100">
+        <div class="card-body">
+          <i class="bi {{ icon }} fs-3" style="color: var(--bs-main-color-secondary);"></i>
+          <h2 class="h6 mt-2 mb-1 text-body">{{ title }}</h2>
+          <p class="small text-muted mb-0">{{ desc }}</p>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

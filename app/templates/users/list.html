@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Users - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Users</h1>
+  <a href="{{ url_for('users.add_user') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add User</a>
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-4"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search users…" value="{{ request.args.get('q', '') }}"></div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Search</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>School</th><th>Status</th><th></th></tr></thead>
+      <tbody>
+        {% for u in users %}
+        <tr>
+          <td>{{ u.full_name }}</td>
+          <td>{{ u.email }}</td>
+          <td>{{ u.role.name }}</td>
+          <td>{{ u.school.name if u.school else '—' }}</td>
+          <td>{% if u.is_active_account %}<span class="status-badge status-active">Active</span>{% else %}<span class="status-badge status-neutral">Inactive</span>{% endif %}</td>
+          <td class="text-end">
+            <a href="{{ url_for('users.edit_user', id=u.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+            {% if u.id != current_user.id %}
+            <form method="post" action="{{ url_for('users.toggle_active', id=u.id) }}" class="d-inline">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="btn btn-sm btn-outline-secondary">{{ 'Deactivate' if u.is_active_account else 'Activate' }}</button>
+            </form>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted text-center py-4">No users found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

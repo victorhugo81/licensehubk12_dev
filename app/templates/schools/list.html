@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block title %}Schools - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Schools</h1>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <a href="{{ url_for('schools.add_school') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add School</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-4"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search schools…" value="{{ request.args.get('q', '') }}"></div>
+    <div class="col-md-3">
+      <select name="school_type" class="form-select form-select-sm">
+        <option value="">All types</option>
+        {% for t in types %}<option value="{{ t }}" {{ 'selected' if request.args.get('school_type') == t }}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>School</th><th>Code</th><th>Type</th><th>Principal</th><th>Grades</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for s in schools %}
+        <tr>
+          <td><a href="{{ url_for('schools.view_school', id=s.id) }}">{{ s.name }}</a></td>
+          <td>{{ s.code }}</td>
+          <td>{{ s.school_type }}</td>
+          <td>{{ s.principal or '—' }}</td>
+          <td>{{ s.grades or '—' }}</td>
+          <td>{% if s.is_active %}<span class="status-badge status-active">Active</span>{% else %}<span class="status-badge status-neutral">Inactive</span>{% endif %}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted text-center py-4">No schools found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

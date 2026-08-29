@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Import History - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Import History</h1>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>File</th><th>Imported By</th><th>Date</th><th>Total</th><th>Valid</th><th>Warnings</th><th>Errors</th></tr></thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>{{ r.filename }}</td>
+          <td>{{ r.imported_by.full_name if r.imported_by else '—' }}</td>
+          <td>{{ r.imported_at | timesince }}</td>
+          <td>{{ r.total_records }}</td>
+          <td class="text-success">{{ r.valid_records }}</td>
+          <td style="color: var(--status-warning);">{{ r.warning_records }}</td>
+          <td class="text-danger">{{ r.error_records }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted text-center py-4">No imports yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

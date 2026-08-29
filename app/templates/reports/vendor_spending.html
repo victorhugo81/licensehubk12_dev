@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}Vendor Spending - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Vendor Spending</h1>
+  {% include "includes/export_buttons.html" %}
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Vendor</th><th># Software</th><th>Total Annual Spend</th></tr></thead>
+      <tbody>
+        {% for v in vendors %}
+        <tr><td>{{ v.name }}</td><td>{{ v.software | length }}</td><td>{{ v.total_annual_spend | money }}</td></tr>
+        {% else %}
+        <tr><td colspan="3" class="text-muted text-center py-4">No vendor spending yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% block title %}Software - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">
+    {% if view == 'active' %}Active Licenses
+    {% elif view == 'expiring' %}Expiring Licenses
+    {% elif view == 'expired' %}Expired Licenses
+    {% else %}All Software{% endif %}
+  </h1>
+  {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+  <a href="{{ url_for('licenses.add_software') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Software</a>
+  {% endif %}
+</div>
+
+<div class="card mb-3">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <input type="hidden" name="view" value="{{ view }}">
+      <div class="col-md-3">
+        <label class="form-label small mb-1" for="q">Search</label>
+        <input type="search" id="q" name="q" class="form-control form-control-sm" value="{{ request.args.get('q', '') }}" placeholder="Software name…">
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1" for="vendor_id">Vendor</label>
+        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if request.args.get('vendor_id', type=int) == v.id }}>{{ v.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1" for="category_id">Category</label>
+        <select id="category_id" name="category_id" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('category_id', type=int) == c.id }}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1" for="status">Status</label>
+        <select id="status" name="status" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <label class="form-label small mb-1" for="license_type">License Type</label>
+        <select id="license_type" name="license_type" class="form-select form-select-sm">
+          <option value="">All</option>
+          {% for lt in license_types %}<option value="{{ lt }}" {{ 'selected' if request.args.get('license_type') == lt }}>{{ lt }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-1">
+        <button class="btn btn-sm btn-outline-primary w-100" type="submit">Filter</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Software</th><th>Vendor</th><th>Category</th><th>License Type</th>
+          <th>Licenses</th><th>Utilization</th><th>Expiration</th><th>Status</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for sw in software_list %}
+        {% set computed = compute_expiration_status(sw.expiration_date, thresholds) %}
+        <tr>
+          <td><a href="{{ url_for('licenses.view_software', id=sw.id) }}">{{ sw.name }}</a></td>
+          <td>{{ sw.vendor.name }}</td>
+          <td>{{ sw.category.name if sw.category else '—' }}</td>
+          <td>{{ sw.license_type }}</td>
+          <td>{{ sw.assigned_licenses }} / {{ sw.license_count }}</td>
+          <td>{{ sw.utilization_pct }}%</td>
+          <td>{{ sw.expiration_date | dateformat }}</td>
+          <td>
+            {% if sw.status != 'Active' %}
+              <span class="status-badge status-neutral">{{ sw.status }}</span>
+            {% else %}
+              <span class="status-badge status-{{ computed }}">{{ status_label(computed) }}</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <a href="{{ url_for('licenses.view_software', id=sw.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
+            {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+            <a href="{{ url_for('licenses.edit_software', id=sw.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="9" class="text-center text-muted py-4">No software found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">
+    {% include "includes/pagination.html" %}
+  </div>
+</div>
+{% endblock %}

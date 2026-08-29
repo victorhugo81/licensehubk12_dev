@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+{% block title %}{{ school.name }} - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ school.name }}</h1>
+    <p class="text-muted mb-0">{{ school.school_type }} · Code {{ school.code }}{% if not school.is_active %} · <span class="status-badge status-neutral">Inactive</span>{% endif %}</p>
+  </div>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('schools.edit_school', id=school.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('schools.delete_school', id=school.id) }}" onsubmit="return confirm('Delete this school?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-5">
+    <div class="card mb-3">
+      <div class="card-header">School Information</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Principal</dt><dd class="col-7">{{ school.principal or '—' }}</dd>
+          <dt class="col-5">Grades Served</dt><dd class="col-7">{{ school.grades or '—' }}</dd>
+          <dt class="col-5">Student Count</dt><dd class="col-7">{{ school.student_count }}</dd>
+          <dt class="col-5">Address</dt><dd class="col-7">{{ school.address or '—' }}</dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card mb-3">
+      <div class="card-header">Licensed Software</div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Software</th><th>Allocated Licenses</th></tr></thead>
+          <tbody>
+            {% for a in allocations %}
+            <tr>
+              <td><a href="{{ url_for('licenses.view_software', id=a.software_id) }}">{{ a.software.name }}</a></td>
+              <td>{{ a.allocated_count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No software allocated to this school yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

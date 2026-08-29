@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">District Dashboard</h1>
+  <span class="text-muted small">{{ current_user.role.name }}{% if current_user.school %} · {{ current_user.school.name }}{% endif %}</span>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon mb-2" style="background: var(--status-info-bg); color: var(--status-info);"><i class="bi bi-collection"></i></div>
+      <div class="stat-value">{{ total_software }}</div>
+      <div class="stat-label">Total Software</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon mb-2" style="background: var(--status-good-bg); color: var(--status-good);"><i class="bi bi-check-circle"></i></div>
+      <div class="stat-value">{{ active_licenses }}</div>
+      <div class="stat-label">Active Licenses</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon mb-2" style="background: var(--status-warning-bg); color: var(--status-warning);"><i class="bi bi-hourglass-split"></i></div>
+      <div class="stat-value">{{ expiring_soon }}</div>
+      <div class="stat-label">Expiring Soon</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon mb-2" style="background: var(--status-critical-bg); color: var(--status-critical);"><i class="bi bi-x-octagon"></i></div>
+      <div class="stat-value">{{ expired }}</div>
+      <div class="stat-label">Expired</div>
+    </div>
+  </div>
+  <div class="col-6 col-lg">
+    <div class="stat-tile">
+      <div class="stat-icon mb-2" style="background: var(--status-neutral-bg); color: var(--status-neutral);"><i class="bi bi-inboxes"></i></div>
+      <div class="stat-value">{{ unused_licenses }}</div>
+      <div class="stat-label">Unused Licenses</div>
+    </div>
+  </div>
+</div>
+
+{% if alerts %}
+<div class="card mb-4">
+  <div class="card-header">Alerts</div>
+  <div class="card-body">
+    {% for severity, text in alerts %}
+      <div class="alert-feed-item">
+        <span class="alert-dot {{ severity }}"></span>
+        <span>{{ text }}</span>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">License Status</div>
+      <div class="card-body">
+        {% for label, count in buckets.items() %}
+          {% if count %}
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <span>{{ label }}</span>
+            <span class="fw-semibold">{{ count }}</span>
+          </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header">License Utilization</div>
+      <div class="card-body">
+        {% for sw in utilization %}
+          <div class="mb-3">
+            <div class="d-flex justify-content-between small mb-1">
+              <a href="{{ url_for('licenses.utilization', id=sw.id) }}">{{ sw.name }}</a>
+              <span class="text-muted">{{ sw.assigned_licenses }} / {{ sw.license_count }} ({{ sw.utilization_pct }}%)</span>
+            </div>
+            <div class="progress" role="progressbar" aria-valuenow="{{ sw.utilization_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ sw.name }} utilization">
+              <div class="progress-bar {{ 'progress-bar-critical' if sw.utilization_pct >= 100 else 'progress-bar-warning' if sw.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ sw.utilization_pct }}%"></div>
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No license utilization data yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mt-1">
+  <div class="col-lg-8">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Expiring Licenses</span>
+        <div class="btn-group btn-group-sm" role="group" aria-label="Filter by days">
+          {% for d in [30, 60, 90] %}
+            <a href="{{ url_for('dashboard.index', days=d) }}" class="btn btn-outline-secondary {{ 'active' if expiring_days == d }}">{{ d }}d</a>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Software</th><th>Vendor</th><th>Expiration</th><th>Licenses</th></tr></thead>
+          <tbody>
+            {% for sw in expiring %}
+            <tr>
+              <td><a href="{{ url_for('licenses.view_software', id=sw.id) }}">{{ sw.name }}</a></td>
+              <td>{{ sw.vendor.name }}</td>
+              <td>{{ sw.expiration_date | dateformat }}</td>
+              <td>{{ sw.license_count }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="4" class="text-muted text-center py-3">Nothing expiring in this window.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header">Recent Activity</div>
+      <div class="card-body">
+        {% for log in recent_activity %}
+          <div class="alert-feed-item">
+            <i class="bi bi-clock-history text-muted-soft mt-1"></i>
+            <div>
+              <div class="small">
+                <strong>{{ log.user.full_name if log.user else 'System' }}</strong>
+                {{ log.action }}d {{ log.object_type }}
+              </div>
+              <div class="text-muted-soft small">{{ log.timestamp | timesince }}</div>
+            </div>
+          </div>
+        {% else %}
+          <p class="text-muted mb-0">No activity yet.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

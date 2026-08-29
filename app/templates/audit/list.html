@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Audit Log - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Audit Log</h1>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-3">
+      <select name="user_id" class="form-select form-select-sm">
+        <option value="">All users</option>
+        {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if request.args.get('user_id', type=int) == u.id }}>{{ u.full_name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="action" class="form-select form-select-sm">
+        <option value="">All actions</option>
+        {% for a in actions %}<option value="{{ a }}" {{ 'selected' if request.args.get('action') == a }}>{{ a }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-3">
+      <select name="object_type" class="form-select form-select-sm">
+        <option value="">All object types</option>
+        {% for t in object_types %}<option value="{{ t }}" {{ 'selected' if request.args.get('object_type') == t }}>{{ t }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>User</th><th>Action</th><th>Object</th><th>Changes</th><th>Timestamp</th><th>IP</th></tr></thead>
+      <tbody>
+        {% for log in logs %}
+        <tr>
+          <td>{{ log.user.full_name if log.user else 'System' }}</td>
+          <td class="text-capitalize">{{ log.action }}</td>
+          <td>{{ log.object_type }}{% if log.object_id %} #{{ log.object_id }}{% endif %}</td>
+          <td class="small">
+            {% for field, delta in log.changes.items() %}
+              <div><strong>{{ field }}</strong>: {{ delta.get('from', '') }} &rarr; {{ delta.get('to', '') }}</div>
+            {% else %}
+              —
+            {% endfor %}
+          </td>
+          <td class="small">{{ log.timestamp | dateformat('%m/%d/%Y %I:%M %p') }}</td>
+          <td class="small">{{ log.ip_address or '—' }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6" class="text-muted text-center py-4">No audit entries yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

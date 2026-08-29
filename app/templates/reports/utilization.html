@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}License Utilization - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">License Utilization</h1>
+  {% include "includes/export_buttons.html" %}
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Software</th><th>Total</th><th>Assigned</th><th>Available</th><th>Utilization</th></tr></thead>
+      <tbody>
+        {% for s in software_list %}
+        <tr>
+          <td>{{ s.name }}</td><td>{{ s.license_count }}</td><td>{{ s.assigned_licenses }}</td><td>{{ s.available_licenses }}</td>
+          <td style="min-width: 160px;">
+            <div class="d-flex align-items-center gap-2">
+              <div class="progress flex-grow-1"><div class="progress-bar {{ 'progress-bar-critical' if s.utilization_pct >= 100 else 'progress-bar-warning' if s.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ s.utilization_pct }}%"></div></div>
+              <span class="small">{{ s.utilization_pct }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-center py-4">No utilization data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

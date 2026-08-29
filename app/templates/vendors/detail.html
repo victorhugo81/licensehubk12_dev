@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block title %}{{ vendor.name }} - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">{{ vendor.name }}</h1>
+    {% if vendor.website %}<a href="{{ vendor.website }}" target="_blank" rel="noopener" class="small">{{ vendor.website }}</a>{% endif %}
+  </div>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('vendors.edit_vendor', id=vendor.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('vendors.delete_vendor', id=vendor.id) }}" onsubmit="return confirm('Delete this vendor?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.software | length }}</div><div class="stat-label">Software Products</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.contracts | length }}</div><div class="stat-label">Contracts</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ upcoming_contracts | length }}</div><div class="stat-label">Active Contracts</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.total_annual_spend | money }}</div><div class="stat-label">Annual Spend</div></div></div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">Contact Information</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Support Email</dt><dd class="col-7">{{ vendor.support_email or '—' }}</dd>
+          <dt class="col-5">Support Phone</dt><dd class="col-7">{{ vendor.support_phone or '—' }}</dd>
+          <dt class="col-5">Account Manager</dt><dd class="col-7">{{ vendor.account_manager or '—' }}</dd>
+          <dt class="col-5">Account Number</dt><dd class="col-7">{{ vendor.account_number or '—' }}</dd>
+        </dl>
+        {% if vendor.notes %}<p class="small text-muted mt-2 mb-0">{{ vendor.notes }}</p>{% endif %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card mb-3">
+      <div class="card-header">Software Products</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Software</th><th>Status</th></tr></thead>
+          <tbody>
+            {% for s in vendor.software %}
+            <tr>
+              <td><a href="{{ url_for('licenses.view_software', id=s.id) }}">{{ s.name }}</a></td>
+              <td><span class="status-badge status-{{ compute_expiration_status(s.expiration_date, thresholds) }}">{{ status_label(compute_expiration_status(s.expiration_date, thresholds)) }}</span></td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No software linked.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

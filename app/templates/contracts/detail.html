@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Contract {{ contract.contract_number }} - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-start mb-3">
+  <div>
+    <h1 class="h4 mb-1">Contract {{ contract.contract_number }}</h1>
+    <p class="text-muted mb-0">{{ contract.vendor.name }}{% if contract.software %} · {{ contract.software.name }}{% endif %}</p>
+  </div>
+  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  <div class="d-flex gap-2">
+    <a href="{{ url_for('contracts.edit_contract', id=contract.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('contracts.delete_contract', id=contract.id) }}" onsubmit="return confirm('Delete this contract?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
+    </form>
+  </div>
+  {% endif %}
+</div>
+
+{% if contract.days_until_end < 0 %}
+  <div class="alert alert-dark">This contract ended {{ -contract.days_until_end }} day(s) ago.</div>
+{% elif contract.days_until_end <= 60 %}
+  <div class="alert alert-warning">This contract ends in {{ contract.days_until_end }} day(s).</div>
+{% endif %}
+
+<div class="card">
+  <div class="card-body">
+    <dl class="row mb-0 small">
+      <dt class="col-3">Start Date</dt><dd class="col-3">{{ contract.start_date | dateformat }}</dd>
+      <dt class="col-3">End Date</dt><dd class="col-3">{{ contract.end_date | dateformat }}</dd>
+      <dt class="col-3">Renewal Date</dt><dd class="col-3">{{ contract.renewal_date | dateformat }}</dd>
+      <dt class="col-3">Cancellation Deadline</dt><dd class="col-3">{{ contract.cancellation_deadline | dateformat }}</dd>
+      <dt class="col-3">Amount</dt><dd class="col-3">{{ contract.contract_amount | money }}</dd>
+      <dt class="col-3">Payment Frequency</dt><dd class="col-3">{{ contract.payment_frequency }}</dd>
+      <dt class="col-3">Auto Renewal</dt><dd class="col-3">{{ 'Yes' if contract.auto_renewal else 'No' }}</dd>
+      <dt class="col-3">PO Number</dt><dd class="col-3">{{ contract.po_number or '—' }}</dd>
+    </dl>
+    {% if contract.notes %}<hr><p class="small mb-0">{{ contract.notes }}</p>{% endif %}
+  </div>
+</div>
+{% endblock %}

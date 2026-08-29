@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}License Inventory - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">License Inventory</h1>
+  {% include "includes/export_buttons.html" %}
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Software</th><th>Vendor</th><th>Category</th><th>License Type</th><th>Total</th><th>Assigned</th><th>Available</th><th>Status</th><th>Expiration</th><th>Annual Cost</th></tr></thead>
+      <tbody>
+        {% for s in software_list %}
+        <tr>
+          <td>{{ s.name }}</td><td>{{ s.vendor.name }}</td><td>{{ s.category.name if s.category else '—' }}</td>
+          <td>{{ s.license_type }}</td><td>{{ s.license_count }}</td><td>{{ s.assigned_licenses }}</td>
+          <td>{{ s.available_licenses }}</td><td>{{ s.status }}</td><td>{{ s.expiration_date | dateformat }}</td>
+          <td>{{ s.annual_cost | money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="10" class="text-muted text-center py-4">No software to report.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
