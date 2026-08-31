@@ -46,7 +46,6 @@ def index():
     active_licenses = buckets["Active"] + buckets["Expiring Soon"]
     expiring_soon = buckets["Expiring Soon"]
     expired = buckets["Expired"]
-    unused_licenses = sum(sw.available_licenses for sw in software_list)
 
     utilization = sorted(
         [sw for sw in software_list if sw.license_count],
@@ -83,7 +82,6 @@ def index():
         active_licenses=active_licenses,
         expiring_soon=expiring_soon,
         expired=expired,
-        unused_licenses=unused_licenses,
         buckets=buckets,
         utilization=utilization,
         expiring=expiring,

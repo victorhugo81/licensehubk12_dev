@@ -42,13 +42,6 @@
           {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
-        <label class="form-label small mb-1" for="license_type">License Type</label>
-        <select id="license_type" name="license_type" class="form-select form-select-sm">
-          <option value="">All</option>
-          {% for lt in license_types %}<option value="{{ lt }}" {{ 'selected' if request.args.get('license_type') == lt }}>{{ lt }}</option>{% endfor %}
-        </select>
-      </div>
       <div class="col-md-1">
         <button class="btn btn-sm btn-outline-primary w-100" type="submit">Filter</button>
       </div>
@@ -72,7 +65,7 @@
           <td><a href="{{ url_for('licenses.view_software', id=sw.id) }}">{{ sw.name }}</a></td>
           <td>{{ sw.vendor.name }}</td>
           <td>{{ sw.category.name if sw.category else '—' }}</td>
-          <td>{{ sw.license_type }}</td>
+          <td>{{ sw.license_type or '—' }}</td>
           <td>{{ sw.assigned_licenses }} / {{ sw.license_count }}</td>
           <td>{{ sw.utilization_pct }}%</td>
           <td>{{ sw.expiration_date | dateformat }}</td>

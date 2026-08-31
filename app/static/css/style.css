@@ -217,6 +217,26 @@ body {
 .alert-dot.info     { background: var(--status-info); }
 
 /* ==========================================================================
+   FORM CONTROLS — visible border on every input/select app-wide, using the
+   same token the login page already uses, so filters, add/edit forms and
+   CSV upload all read consistently against the off-white page background.
+   ========================================================================== */
+.form-control,
+.form-select {
+  border: 1.5px solid var(--input-color-border);
+  background-color: var(--input-color-background);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--bs-main-color-primary);
+  box-shadow: 0 0 0 3px rgba(19, 40, 74, 0.14);
+}
+.form-control.is-invalid,
+.form-select.is-invalid {
+  border-color: var(--status-critical);
+}
+
+/* ==========================================================================
    MISC
    ========================================================================== */
 .text-muted-soft { color: var(--color-text-subtle) !important; }

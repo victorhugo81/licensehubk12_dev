@@ -89,15 +89,11 @@ class SoftwareForm(FlaskForm):
     vendor_id = SelectField("Vendor", coerce=int, validators=[DataRequired()])
     category_id = SelectField("Category", coerce=int, validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
-    license_type = SelectField("License type", choices=[(t, t) for t in Software.LICENSE_TYPES], validators=[DataRequired()])
     license_count = IntegerField("Total license count", validators=[DataRequired(), NumberRange(min=0)])
     start_date = DateField("Start date", validators=[Optional()])
     expiration_date = DateField("Expiration date", validators=[Optional()])
     renewal_date = DateField("Renewal date", validators=[Optional()])
-    annual_cost = DecimalField("Annual cost", validators=[Optional(), NumberRange(min=0)], places=2, default=0)
-    contract_number = StringField("Contract number", validators=[Optional(), Length(max=100)])
     po_number = StringField("PO number", validators=[Optional(), Length(max=100)])
-    vendor_contact = StringField("Vendor contact", validators=[Optional(), Length(max=150)])
     support_url = StringField("Support URL", validators=[Optional(), Length(max=255)])
     login_url = StringField("Login URL", validators=[Optional(), Length(max=255)])
     notes = TextAreaField("Notes", validators=[Optional()])
@@ -125,27 +121,25 @@ class AllocationForm(FlaskForm):
 
 
 class ContractForm(FlaskForm):
+    """Vendor and software are implicit: a contract is always created and
+    edited from its software's detail page, and takes that software's
+    vendor rather than asking again. License type, annual cost and vendor
+    contact live here rather than on Software, since they're terms of a
+    specific agreement and can change from one contract/renewal to the
+    next."""
     contract_number = StringField("Contract number", validators=[DataRequired(), Length(max=100)])
-    vendor_id = SelectField("Vendor", coerce=int, validators=[DataRequired()])
-    software_id = SelectField("Software", coerce=int, validators=[Optional()])
+    license_type = SelectField("License type", choices=[(t, t) for t in Software.LICENSE_TYPES], validators=[DataRequired()])
+    vendor_contact = StringField("Vendor contact", validators=[Optional(), Length(max=150)])
     start_date = DateField("Start date", validators=[DataRequired()])
     end_date = DateField("End date", validators=[DataRequired()])
     renewal_date = DateField("Renewal date", validators=[Optional()])
-    contract_amount = DecimalField("Contract amount", validators=[Optional(), NumberRange(min=0)], places=2, default=0)
+    annual_cost = DecimalField("Annual cost", validators=[Optional(), NumberRange(min=0)], places=2, default=0)
     payment_frequency = SelectField("Payment frequency", choices=[(p, p) for p in Contract.PAYMENT_FREQUENCIES], validators=[DataRequired()])
     auto_renewal = BooleanField("Auto renewal")
     cancellation_deadline = DateField("Cancellation deadline", validators=[Optional()])
     po_number = StringField("PO number", validators=[Optional(), Length(max=100)])
     notes = TextAreaField("Notes", validators=[Optional()])
     submit = SubmitField("Save contract")
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        from app.models import Vendor
-        self.vendor_id.choices = [(v.id, v.name) for v in Vendor.query.order_by(Vendor.name).all()]
-        self.software_id.choices = [(0, "-- None --")] + [
-            (s.id, s.name) for s in Software.query.order_by(Software.name).all()
-        ]
 
     def validate_end_date(self, field):
         if self.start_date.data and field.data and field.data <= self.start_date.data:

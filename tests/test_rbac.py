@@ -8,7 +8,6 @@ from tests.conftest import login, make_user
     "/software/add",
     "/vendors/add",
     "/schools/add",
-    "/contracts/add",
     "/administration/users/",
     "/administration/settings/",
     "/audit-log/",
@@ -16,6 +15,12 @@ from tests.conftest import login, make_user
 def test_viewer_cannot_access_write_or_admin_routes(client, viewer_user, path):
     login(client, "viewer@example.com")
     resp = client.get(path)
+    assert resp.status_code == 403
+
+
+def test_viewer_cannot_add_contract(client, viewer_user, software):
+    login(client, "viewer@example.com")
+    resp = client.get(f"/software/{software.id}/contracts/add")
     assert resp.status_code == 403
 
 

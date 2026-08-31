@@ -39,7 +39,11 @@
           <td>{{ log.object_type }}{% if log.object_id %} #{{ log.object_id }}{% endif %}</td>
           <td class="small">
             {% for field, delta in log.changes.items() %}
-              <div><strong>{{ field }}</strong>: {{ delta.get('from', '') }} &rarr; {{ delta.get('to', '') }}</div>
+              {% if delta is mapping %}
+                <div><strong>{{ field }}</strong>: {{ delta.get('from', '') }} &rarr; {{ delta.get('to', '') }}</div>
+              {% else %}
+                <div><strong>{{ field }}</strong>: {{ delta }}</div>
+              {% endif %}
             {% else %}
               —
             {% endfor %}

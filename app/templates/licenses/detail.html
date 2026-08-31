@@ -53,13 +53,12 @@
       <div class="card-header">License Information</div>
       <div class="card-body">
         <dl class="row mb-0 small">
-          <dt class="col-5">License Type</dt><dd class="col-7">{{ sw.license_type }}</dd>
+          <dt class="col-5">License Type</dt><dd class="col-7">{{ sw.license_type or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
           <dt class="col-5">Start Date</dt><dd class="col-7">{{ sw.start_date | dateformat }}</dd>
           <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ sw.expiration_date | dateformat }}</dd>
           <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ sw.renewal_date | dateformat }}</dd>
-          <dt class="col-5">Contract Number</dt><dd class="col-7">{{ sw.contract_number or '—' }}</dd>
           <dt class="col-5">PO Number</dt><dd class="col-7">{{ sw.po_number or '—' }}</dd>
-          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ sw.vendor_contact or '—' }}</dd>
+          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ sw.vendor_contact or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
           <dt class="col-5">Support URL</dt><dd class="col-7">{% if sw.support_url %}<a href="{{ sw.support_url }}" target="_blank" rel="noopener">{{ sw.support_url }}</a>{% else %}—{% endif %}</dd>
           <dt class="col-5">Login URL</dt><dd class="col-7">{% if sw.login_url %}<a href="{{ sw.login_url }}" target="_blank" rel="noopener">{{ sw.login_url }}</a>{% else %}—{% endif %}</dd>
         </dl>
@@ -133,19 +132,34 @@
     </div>
 
     <div class="card mb-3">
-      <div class="card-header">Contracts</div>
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Contracts</span>
+        {% if current_user.has_role('Administrator', 'IT Administrator') %}
+        <a href="{{ url_for('contracts.add_contract', software_id=sw.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add Contract</a>
+        {% endif %}
+      </div>
       <div class="table-responsive">
         <table class="table table-sm mb-0">
-          <thead><tr><th>Contract #</th><th>End Date</th><th>Amount</th></tr></thead>
+          <thead><tr><th>Contract #</th><th>License Type</th><th>End Date</th><th>Annual Cost</th>{% if current_user.has_role('Administrator', 'IT Administrator') %}<th></th>{% endif %}</tr></thead>
           <tbody>
             {% for c in sw.contracts %}
             <tr>
               <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.contract_number }}</a></td>
+              <td>{{ c.license_type }}</td>
               <td>{{ c.end_date | dateformat }}</td>
-              <td>{{ c.contract_amount | money }}</td>
+              <td>{{ c.annual_cost | money }}</td>
+              {% if current_user.has_role('Administrator', 'IT Administrator') %}
+              <td class="text-end text-nowrap">
+                <a href="{{ url_for('contracts.edit_contract', software_id=sw.id, id=c.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{{ url_for('contracts.delete_contract', software_id=sw.id, id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete this contract?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                </form>
+              </td>
+              {% endif %}
             </tr>
             {% else %}
-            <tr><td colspan="3" class="text-muted text-center py-3">No contracts linked.</td></tr>
+            <tr><td colspan="5" class="text-muted text-center py-3">No contracts yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>

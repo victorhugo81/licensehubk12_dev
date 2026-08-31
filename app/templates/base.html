@@ -61,9 +61,6 @@
           <a class="nav-link {{ 'active' if 'vendors.' in request.endpoint }}" href="{{ url_for('vendors.list_vendors') }}"><i class="bi bi-shop"></i> Vendors</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link {{ 'active' if 'contracts.' in request.endpoint }}" href="{{ url_for('contracts.list_contracts') }}"><i class="bi bi-file-earmark-text"></i> Contracts</a>
-        </li>
-        <li class="nav-item">
           <a class="nav-link {{ 'active' if 'reports.' in request.endpoint }}" href="{{ url_for('reports.index') }}"><i class="bi bi-bar-chart-line"></i> Reports</a>
         </li>
         <li class="nav-item">

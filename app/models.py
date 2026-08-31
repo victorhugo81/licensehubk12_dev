@@ -235,18 +235,13 @@ class Software(db.Model):
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     description = db.Column(db.Text)
 
-    license_type = db.Column(db.String(30), nullable=False, default="Subscription")
     license_count = db.Column(db.Integer, nullable=False, default=0)
 
     start_date = db.Column(db.Date)
     expiration_date = db.Column(db.Date, index=True)
     renewal_date = db.Column(db.Date)
 
-    annual_cost = db.Column(db.Numeric(12, 2), default=0)
-
-    contract_number = db.Column(db.String(100))
     po_number = db.Column(db.String(100))
-    vendor_contact = db.Column(db.String(150))
     support_url = db.Column(db.String(255))
     login_url = db.Column(db.String(255))
     notes = db.Column(db.Text)
@@ -275,6 +270,36 @@ class Software(db.Model):
         if not self.license_count:
             return 0.0
         return round((self.assigned_licenses / self.license_count) * 100, 1)
+
+    @property
+    def current_contract(self):
+        """The contract license_type/annual_cost/vendor_contact are drawn
+        from: the currently-active contract (end_date in the future) with
+        the latest end_date, or - if none are active - the most recently
+        ended one. None if this software has no contracts at all."""
+        if not self.contracts:
+            return None
+        today = date.today()
+        active = [c for c in self.contracts if c.end_date >= today]
+        return max(active, key=lambda c: c.end_date) if active else max(self.contracts, key=lambda c: c.end_date)
+
+    @property
+    def license_type(self):
+        contract = self.current_contract
+        return contract.license_type if contract else None
+
+    @property
+    def vendor_contact(self):
+        contract = self.current_contract
+        return contract.vendor_contact if contract else None
+
+    @property
+    def annual_cost(self):
+        """Total annual cost across all currently-active contracts (0 if
+        none are active) - a software with several concurrent contracts
+        (e.g. per-building site licenses) sums them."""
+        today = date.today()
+        return sum((c.annual_cost or 0) for c in self.contracts if c.end_date >= today)
 
     @property
     def cost_per_license(self):
@@ -330,14 +355,20 @@ class Contract(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     contract_number = db.Column(db.String(100), nullable=False, index=True)
+    # Derived from software.vendor_id at creation time - contracts are
+    # always managed from the software detail page now, so there's no
+    # separate vendor picker; this column is kept for direct vendor-spend
+    # queries (Vendor.contracts) without a join through Software.
     vendor_id = db.Column(db.Integer, db.ForeignKey("vendors.id"), nullable=False, index=True)
-    software_id = db.Column(db.Integer, db.ForeignKey("software.id"), nullable=True, index=True)
+    software_id = db.Column(db.Integer, db.ForeignKey("software.id"), nullable=False, index=True)
 
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False, index=True)
     renewal_date = db.Column(db.Date)
 
-    contract_amount = db.Column(db.Numeric(12, 2), default=0)
+    license_type = db.Column(db.String(30), nullable=False, default="Subscription")
+    annual_cost = db.Column(db.Numeric(12, 2), default=0)
+    vendor_contact = db.Column(db.String(150))
     payment_frequency = db.Column(db.String(30), nullable=False, default="Annual")
     auto_renewal = db.Column(db.Boolean, default=False, nullable=False)
     cancellation_deadline = db.Column(db.Date)

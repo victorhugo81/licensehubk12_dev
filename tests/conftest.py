@@ -71,7 +71,7 @@ def vendor(db):
 
 @pytest.fixture()
 def software(db, vendor):
-    s = Software(name="TestSoft", vendor=vendor, license_type="District License", license_count=100, status="Active")
+    s = Software(name="TestSoft", vendor=vendor, license_count=100, status="Active")
     db.session.add(s)
     db.session.commit()
     return s

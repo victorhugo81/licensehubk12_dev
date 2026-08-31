@@ -12,11 +12,11 @@ assigned_licenses, expiration_date, annual_cost
 import csv
 import io
 from dataclasses import dataclass, field
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from app.extensions import db
-from app.models import Category, School, Software, Vendor
+from app.models import Category, Contract, School, Software, Vendor
 from app.services import allocation as allocation_service
 
 REQUIRED_COLUMNS = ["software", "vendor", "school", "total_licenses", "assigned_licenses", "expiration_date", "annual_cost"]
@@ -182,6 +182,28 @@ def validate_csv(file_stream) -> ImportPreview:
     return ImportPreview(rows=rows, total=len(rows), valid=valid, warnings=warnings, errors=errors)
 
 
+def _upsert_import_contract(software, annual_cost):
+    """Annual cost lives on Contract, not Software - but the CSV format has
+    no contract_number/license_type/vendor_contact columns to key one on.
+    Import instead maintains one canonical, stable-keyed contract per
+    software to hold the imported figure, so re-importing an updated CSV
+    updates that same contract rather than creating duplicates."""
+    contract_number = f"IMPORT-{software.id}"
+    contract = Contract.query.filter_by(software_id=software.id, contract_number=contract_number).first()
+    end_date = software.expiration_date or (date.today() + timedelta(days=365))
+    if contract is None:
+        contract = Contract(
+            contract_number=contract_number, software=software, vendor_id=software.vendor_id,
+            license_type="District License", start_date=date.today(), end_date=end_date,
+            payment_frequency="Annual",
+        )
+        db.session.add(contract)
+    else:
+        contract.end_date = end_date
+    contract.annual_cost = annual_cost
+    return contract
+
+
 def commit_import(preview: ImportPreview, imported_by=None):
     """Commit every non-error row from a previously computed preview.
     Errors are never imported. Returns (created_software, updated_software, allocation_errors)."""
@@ -217,10 +239,8 @@ def commit_import(preview: ImportPreview, imported_by=None):
             software = Software(
                 name=software_name,
                 vendor=vendor,
-                license_type="District License",
                 license_count=total_licenses or 0,
                 expiration_date=expiration,
-                annual_cost=annual_cost,
                 status="Active",
                 created_by_id=imported_by.id if imported_by else None,
             )
@@ -232,9 +252,10 @@ def commit_import(preview: ImportPreview, imported_by=None):
                 software.license_count = max(software.license_count, total_licenses)
             if expiration:
                 software.expiration_date = expiration
-            if annual_cost:
-                software.annual_cost = annual_cost
             updated += 1
+
+        if annual_cost:
+            _upsert_import_contract(software, annual_cost)
 
         try:
             allocation_service.set_allocation(software, school, assigned_licenses)

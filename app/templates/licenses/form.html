@@ -11,21 +11,18 @@
         {{ field(form.name, "col-md-6") }}
         {{ field(form.vendor_id, "col-md-6") }}
         {{ field(form.category_id, "col-md-6") }}
-        {{ field(form.license_type, "col-md-6") }}
-        {{ field(form.license_count, "col-md-4") }}
-        {{ field(form.annual_cost, "col-md-4") }}
+        {{ field(form.license_count, "col-md-6") }}
         {{ field(form.status, "col-md-4") }}
         {{ field(form.start_date, "col-md-4") }}
         {{ field(form.expiration_date, "col-md-4") }}
-        {{ field(form.renewal_date, "col-md-4") }}
-        {{ field(form.contract_number, "col-md-6") }}
+        {{ field(form.renewal_date, "col-md-6") }}
         {{ field(form.po_number, "col-md-6") }}
-        {{ field(form.vendor_contact, "col-md-6") }}
         {{ field(form.support_url, "col-md-6") }}
         {{ field(form.login_url, "col-md-6") }}
         {{ field(form.description, "col-12") }}
         {{ field(form.notes, "col-12") }}
       </div>
+      <p class="text-muted small mb-3">License type, annual cost, contract number and vendor contact are set per-contract{% if sw %} - see Contracts below{% else %}, once this software has been created{% endif %}.</p>
       <div class="d-flex gap-2">
         {{ form.submit(class="btn btn-primary") }}
         <a href="{{ url_for('licenses.list_software') }}" class="btn btn-outline-secondary">Cancel</a>

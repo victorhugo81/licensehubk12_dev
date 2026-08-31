@@ -86,9 +86,7 @@ def create_software():
 
     s = Software(
         name=data["name"], vendor_id=data["vendor_id"],
-        license_type=data.get("license_type", "Subscription"),
         license_count=data.get("license_count", 0),
-        annual_cost=data.get("annual_cost", 0),
         status=data.get("status", "Active"),
         created_by_id=api_user().id,
     )
@@ -107,7 +105,7 @@ def create_software():
 def update_software(id):
     s = Software.query.get_or_404(id)
     data = request.get_json(silent=True) or {}
-    for field in ("name", "license_type", "license_count", "annual_cost", "status", "vendor_id"):
+    for field in ("name", "license_count", "status", "vendor_id"):
         if field in data:
             setattr(s, field, data[field])
     if "expiration_date" in data:

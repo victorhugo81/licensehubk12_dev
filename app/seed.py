@@ -90,20 +90,20 @@ def run_seed():
 
     # Software / licenses
     software_data = [
-        dict(name="IXL", vendor=vendors["IXL Learning"], category=curriculum_cat, license_type="District License",
-             license_count=4000, expiration_date=TODAY + timedelta(days=18), annual_cost=112000,
+        dict(name="IXL", vendor=vendors["IXL Learning"], category=curriculum_cat,
+             license_count=4000, expiration_date=TODAY + timedelta(days=18),
              description="Math and Language Arts practice platform."),
-        dict(name="i-Ready", vendor=vendors["Curriculum Associates"], category=assessment_cat, license_type="District License",
-             license_count=5000, expiration_date=TODAY + timedelta(days=73), annual_cost=135000,
+        dict(name="i-Ready", vendor=vendors["Curriculum Associates"], category=assessment_cat,
+             license_count=5000, expiration_date=TODAY + timedelta(days=73),
              description="Adaptive diagnostic and instruction for reading and math."),
-        dict(name="Benchmark", vendor=vendors["Benchmark Education"], category=curriculum_cat, license_type="Site License",
-             license_count=3000, expiration_date=TODAY - timedelta(days=3), annual_cost=78000,
+        dict(name="Benchmark", vendor=vendors["Benchmark Education"], category=curriculum_cat,
+             license_count=3000, expiration_date=TODAY - timedelta(days=3),
              description="K-6 literacy curriculum."),
-        dict(name="Canvas", vendor=vendors["Canvas (Instructure)"], category=lms_cat, license_type="District License",
-             license_count=2500, expiration_date=TODAY + timedelta(days=210), annual_cost=95000,
+        dict(name="Canvas", vendor=vendors["Canvas (Instructure)"], category=lms_cat,
+             license_count=2500, expiration_date=TODAY + timedelta(days=210),
              description="Learning management system."),
-        dict(name="Clever", vendor=vendors["Clever"], category=sis_cat, license_type="District License",
-             license_count=6000, expiration_date=TODAY + timedelta(days=300), annual_cost=42000,
+        dict(name="Clever", vendor=vendors["Clever"], category=sis_cat,
+             license_count=6000, expiration_date=TODAY + timedelta(days=300),
              description="Single sign-on and rostering."),
     ]
     software = {}
@@ -139,21 +139,28 @@ def run_seed():
             )
     db.session.commit()
 
-    # Contracts
+    # Contracts - license type, annual cost and vendor contact are terms of
+    # the agreement, so they live here rather than on Software.
     contract_plan = [
-        ("CN-2026-IXL-01", "IXL Learning", "IXL", TODAY - timedelta(days=347), TODAY + timedelta(days=18), 112000, "Annual", True),
-        ("CN-2026-CA-02", "Curriculum Associates", "i-Ready", TODAY - timedelta(days=292), TODAY + timedelta(days=73), 135000, "Annual", True),
-        ("CN-2025-BM-03", "Benchmark Education", "Benchmark", TODAY - timedelta(days=362), TODAY - timedelta(days=3), 78000, "Annual", False),
-        ("CN-2026-CV-04", "Canvas (Instructure)", "Canvas", TODAY - timedelta(days=155), TODAY + timedelta(days=210), 95000, "Multi-Year", True),
-        ("CN-2026-CL-05", "Clever", "Clever", TODAY - timedelta(days=65), TODAY + timedelta(days=300), 42000, "Annual", True),
+        ("CN-2026-IXL-01", "IXL Learning", "IXL", TODAY - timedelta(days=347), TODAY + timedelta(days=18),
+         "District License", 112000, "Annual", True, "Jamie Cole"),
+        ("CN-2026-CA-02", "Curriculum Associates", "i-Ready", TODAY - timedelta(days=292), TODAY + timedelta(days=73),
+         "District License", 135000, "Annual", True, "Priya Nair"),
+        ("CN-2025-BM-03", "Benchmark Education", "Benchmark", TODAY - timedelta(days=362), TODAY - timedelta(days=3),
+         "Site License", 78000, "Annual", False, "Chris Adams"),
+        ("CN-2026-CV-04", "Canvas (Instructure)", "Canvas", TODAY - timedelta(days=155), TODAY + timedelta(days=210),
+         "District License", 95000, "Multi-Year", True, "Sam Rivera"),
+        ("CN-2026-CL-05", "Clever", "Clever", TODAY - timedelta(days=65), TODAY + timedelta(days=300),
+         "District License", 42000, "Annual", True, "Alex Kim"),
     ]
-    for number, vendor_name, sw_name, start, end, amount, freq, auto in contract_plan:
+    for number, vendor_name, sw_name, start, end, license_type, amount, freq, auto, contact in contract_plan:
         _get_or_create(
             Contract, contract_number=number,
             defaults=dict(
                 vendor_id=vendors[vendor_name].id, software_id=software[sw_name].id,
                 start_date=start, end_date=end, renewal_date=end - timedelta(days=30),
-                contract_amount=amount, payment_frequency=freq, auto_renewal=auto,
+                license_type=license_type, annual_cost=amount, vendor_contact=contact,
+                payment_frequency=freq, auto_renewal=auto,
                 cancellation_deadline=end - timedelta(days=45),
             ),
         )

@@ -19,8 +19,7 @@ PER_PAGE = 20
 def _software_form_data(sw):
     return {
         "name": sw.name, "vendor_id": sw.vendor_id, "category_id": sw.category_id or 0,
-        "license_type": sw.license_type, "license_count": sw.license_count,
-        "expiration_date": sw.expiration_date, "annual_cost": sw.annual_cost, "status": sw.status,
+        "license_count": sw.license_count, "expiration_date": sw.expiration_date, "status": sw.status,
     }
 
 
@@ -50,10 +49,6 @@ def list_software():
     if status:
         query = query.filter(Software.status == status)
 
-    license_type = request.args.get("license_type", "").strip()
-    if license_type:
-        query = query.filter(Software.license_type == license_type)
-
     view = request.args.get("view", "")
     thresholds = get_thresholds()
     if view == "expiring":
@@ -73,7 +68,6 @@ def list_software():
         vendors=Vendor.query.order_by(Vendor.name).all(),
         categories=Category.query.order_by(Category.name).all(),
         statuses=Software.STATUSES,
-        license_types=Software.LICENSE_TYPES,
         thresholds=thresholds,
         view=view,
         compute_expiration_status=compute_expiration_status,
