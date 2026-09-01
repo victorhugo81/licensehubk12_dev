@@ -2,11 +2,25 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileRequired
 from wtforms import (
     BooleanField, DateField, DecimalField, FileField, IntegerField, PasswordField,
-    SelectField, StringField, SubmitField, TextAreaField,
+    SelectField, SelectMultipleField, StringField, SubmitField, TextAreaField,
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
+from wtforms.widgets import CheckboxInput
 
 from app.models import Contract, License, Role, School
+
+
+class GradesField(SelectMultipleField):
+    """Renders as a checkbox per grade; stored on the model as a single
+    comma-separated string (School.grades), not a list column."""
+
+    option_widget = CheckboxInput()
+
+    def process_data(self, value):
+        self.data = [g.strip() for g in value.split(",")] if value else []
+
+    def populate_obj(self, obj, name):
+        setattr(obj, name, ",".join(self.data) if self.data else None)
 
 
 class LoginForm(FlaskForm):
@@ -73,7 +87,7 @@ class SchoolForm(FlaskForm):
     school_type = SelectField("School type", choices=[(t, t) for t in School.TYPES], validators=[DataRequired()])
     address = StringField("Address", validators=[Optional(), Length(max=255)])
     principal = StringField("Principal", validators=[Optional(), Length(max=150)])
-    grades = StringField("Grades served", validators=[Optional(), Length(max=50)])
+    grades = GradesField("Grades served", choices=[(g, g) for g in School.GRADES])
     student_count = IntegerField("Student count", validators=[Optional(), NumberRange(min=0)], default=0)
     is_active = BooleanField("Active", default=True)
     submit = SubmitField("Save school")
@@ -85,14 +99,14 @@ class CategoryForm(FlaskForm):
 
 
 class LicenseForm(FlaskForm):
+    """Vendor is implicit: a license is always created from its contract's
+    detail page, and takes that contract's vendor rather than asking
+    again. Start/expiration/renewal dates live on the Contract instead of
+    here, since a license's dates are just its contract's terms."""
     name = StringField("License name", validators=[DataRequired(), Length(max=150)])
-    vendor_id = SelectField("Vendor", coerce=int, validators=[DataRequired()])
     category_id = SelectField("Category", coerce=int, validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
     license_count = IntegerField("Total license count", validators=[DataRequired(), NumberRange(min=0)])
-    start_date = DateField("Start date", validators=[Optional()])
-    expiration_date = DateField("Expiration date", validators=[Optional()])
-    renewal_date = DateField("Renewal date", validators=[Optional()])
     po_number = StringField("PO number", validators=[Optional(), Length(max=100)])
     support_url = StringField("Support URL", validators=[Optional(), Length(max=255)])
     login_url = StringField("Login URL", validators=[Optional(), Length(max=255)])
@@ -102,8 +116,7 @@ class LicenseForm(FlaskForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        from app.models import Vendor, Category
-        self.vendor_id.choices = [(v.id, v.name) for v in Vendor.query.order_by(Vendor.name).all()]
+        from app.models import Category
         self.category_id.choices = [(0, "-- None --")] + [
             (c.id, c.name) for c in Category.query.order_by(Category.name).all()
         ]
@@ -121,13 +134,13 @@ class AllocationForm(FlaskForm):
 
 
 class ContractForm(FlaskForm):
-    """Vendor and license are implicit: a contract is always created and
-    edited from its license's detail page, and takes that license's
-    vendor rather than asking again. Annual cost and vendor contact live
-    here rather than on License, since they're terms of a specific
-    agreement and can change from one contract/renewal to the next.
-    PO number is the one identifying number for a contract - there's no
-    separate contract number."""
+    """Vendor is implicit: a contract is always created and edited from
+    its vendor's detail page, and takes that vendor rather than asking
+    again - one or more Licenses get added to it afterward. Annual cost and
+    vendor contact are terms of this specific agreement, so they live here
+    rather than per-license (a contract's total covers everything bundled
+    under it). PO number is the one identifying number for a contract -
+    there's no separate contract number."""
     po_number = StringField("PO number", validators=[DataRequired(), Length(max=100)])
     vendor_contact = StringField("Vendor contact", validators=[Optional(), Length(max=150)])
     start_date = DateField("Start date", validators=[DataRequired()])

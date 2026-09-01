@@ -79,11 +79,11 @@ def test_allocation_negative_rejected(license_, db):
         allocation_service.set_allocation(license_, school_a, -5)
 
 
-def test_license_crud_via_web(client, db, admin_user, vendor):
+def test_license_crud_via_web(client, db, admin_user, contract):
     login(client, "admin@example.com")
 
-    resp = client.post("/licenses/add", data={
-        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0,
+    resp = client.post(f"/contracts/{contract.id}/licenses/add", data={
+        "name": "NewSoft", "category_id": 0,
         "license_count": "50", "status": "Active",
     }, follow_redirects=True)
     assert resp.status_code == 200
@@ -92,9 +92,10 @@ def test_license_crud_via_web(client, db, admin_user, vendor):
     lic = License.query.filter_by(name="NewSoft").first()
     assert lic is not None
     assert lic.license_count == 50
+    assert lic.vendor_id == contract.vendor_id
 
     resp = client.post(f"/licenses/{lic.id}/edit", data={
-        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0,
+        "name": "NewSoft", "category_id": 0,
         "license_count": "75", "status": "Active",
     }, follow_redirects=True)
     db.session.refresh(lic)

@@ -41,6 +41,31 @@
   </div>
   <div class="col-lg-6">
     <div class="card mb-3">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Contracts</span>
+        {% if current_user.has_role('Administrator', 'IT Administrator') %}
+        <a href="{{ url_for('contracts.add_contract', vendor_id=vendor.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add Contract</a>
+        {% endif %}
+      </div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>PO Number</th><th>End Date</th><th>Licenses</th></tr></thead>
+          <tbody>
+            {% for c in vendor.contracts %}
+            <tr>
+              <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.po_number }}</a></td>
+              <td>{{ c.end_date | dateformat }}</td>
+              <td>{{ c.licenses | length }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="3" class="text-muted text-center py-3">No contracts yet.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card mb-3">
       <div class="card-header">Licenses</div>
       <div class="table-responsive">
         <table class="table table-sm mb-0">

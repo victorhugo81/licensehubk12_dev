@@ -3,14 +3,14 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-start mb-3">
   <div>
-    <a href="{{ url_for('licenses.view_license', id=contract.license_id) }}" class="small d-inline-block mb-1"><i class="bi bi-arrow-left"></i> Back to {{ contract.license.name }}</a>
+    <a href="{{ url_for('contracts.list_contracts') }}" class="small d-inline-block mb-1"><i class="bi bi-arrow-left"></i> Back to Contracts</a>
     <h1 class="h4 mb-1">PO Number {{ contract.po_number }}</h1>
-    <p class="text-muted mb-0">{{ contract.vendor.name }} &middot; {{ contract.license.name }}</p>
+    <p class="text-muted mb-0">{{ contract.vendor.name }}</p>
   </div>
   {% if current_user.has_role('Administrator', 'IT Administrator') %}
   <div class="d-flex gap-2">
-    <a href="{{ url_for('contracts.edit_contract', license_id=contract.license_id, id=contract.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
-    <form method="post" action="{{ url_for('contracts.delete_contract', license_id=contract.license_id, id=contract.id) }}" onsubmit="return confirm('Delete this contract?');">
+    <a href="{{ url_for('contracts.edit_contract', vendor_id=contract.vendor_id, id=contract.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+    <form method="post" action="{{ url_for('contracts.delete_contract', vendor_id=contract.vendor_id, id=contract.id) }}" onsubmit="return confirm('Delete this contract?');">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
     </form>
@@ -28,34 +28,38 @@
   <div class="card-body">
     <dl class="row mb-0 small">
       <dt class="col-3">Annual Cost</dt><dd class="col-3">{{ contract.annual_cost | money }}</dd>
+      <dt class="col-3">Vendor Contact</dt><dd class="col-3">{{ contract.vendor_contact or '—' }}</dd>
+      <dt class="col-3">Payment Frequency</dt><dd class="col-3">{{ contract.payment_frequency }}</dd>
+      <dt class="col-3">Auto Renewal</dt><dd class="col-3">{{ 'Yes' if contract.auto_renewal else 'No' }}</dd>
       <dt class="col-3">Start Date</dt><dd class="col-3">{{ contract.start_date | dateformat }}</dd>
       <dt class="col-3">End Date</dt><dd class="col-3">{{ contract.end_date | dateformat }}</dd>
       <dt class="col-3">Renewal Date</dt><dd class="col-3">{{ contract.renewal_date | dateformat }}</dd>
       <dt class="col-3">Cancellation Deadline</dt><dd class="col-3">{{ contract.cancellation_deadline | dateformat }}</dd>
-      <dt class="col-3">Payment Frequency</dt><dd class="col-3">{{ contract.payment_frequency }}</dd>
-      <dt class="col-3">Auto Renewal</dt><dd class="col-3">{{ 'Yes' if contract.auto_renewal else 'No' }}</dd>
-      <dt class="col-3">Vendor Contact</dt><dd class="col-3">{{ contract.vendor_contact or '—' }}</dd>
     </dl>
     {% if contract.notes %}<hr><p class="small mb-0">{{ contract.notes }}</p>{% endif %}
   </div>
 </div>
 
 <div class="card mt-3">
-  <div class="card-header">License</div>
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Licenses</span>
+    {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+    <a href="{{ url_for('licenses.add_license', contract_id=contract.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add License</a>
+    {% endif %}
+  </div>
   <div class="table-responsive">
     <table class="table table-hover mb-0">
       <thead>
         <tr>
-          <th>License</th><th>Vendor</th><th>Category</th>
+          <th>License</th><th>Category</th>
           <th>Licenses</th><th>Utilization</th><th>Expiration</th><th>Status</th><th></th>
         </tr>
       </thead>
       <tbody>
-        {% set lic = contract.license %}
+        {% for lic in contract.licenses %}
         {% set computed = compute_expiration_status(lic.expiration_date, thresholds) %}
         <tr>
           <td><a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a></td>
-          <td>{{ lic.vendor.name }}</td>
           <td>{{ lic.category.name if lic.category else '—' }}</td>
           <td>{{ lic.assigned_licenses }} / {{ lic.license_count }}</td>
           <td>{{ lic.utilization_pct }}%</td>
@@ -71,6 +75,9 @@
             <a href="{{ url_for('licenses.view_license', id=lic.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-eye"></i></a>
           </td>
         </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted text-center py-3">No licenses linked.</td></tr>
+        {% endfor %}
       </tbody>
     </table>
   </div>

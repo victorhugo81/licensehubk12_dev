@@ -1,11 +1,9 @@
-from datetime import date
-
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app.extensions import db
 from app.forms import AllocationForm, CategoryForm, LicenseForm
-from app.models import Category, License, LicenseAllocation, Role, School, Vendor
+from app.models import Category, Contract, License, LicenseAllocation, Role, School, Vendor
 from app.services import allocation as allocation_service
 from app.services.audit import diff_changes, log_action
 from app.services.status import compute_expiration_status, get_thresholds
@@ -18,8 +16,8 @@ PER_PAGE = 20
 
 def _license_form_data(lic):
     return {
-        "name": lic.name, "vendor_id": lic.vendor_id, "category_id": lic.category_id or 0,
-        "license_count": lic.license_count, "expiration_date": lic.expiration_date, "status": lic.status,
+        "name": lic.name, "category_id": lic.category_id or 0,
+        "license_count": lic.license_count, "status": lic.status,
     }
 
 
@@ -49,14 +47,7 @@ def list_licenses():
     if status:
         query = query.filter(License.status == status)
 
-    view = request.args.get("view", "")
     thresholds = get_thresholds()
-    if view == "expiring":
-        query = query.filter(License.expiration_date.isnot(None), License.expiration_date >= date.today())
-    elif view == "expired":
-        query = query.filter(License.expiration_date.isnot(None), License.expiration_date < date.today())
-    elif view == "active":
-        query = query.filter(License.status == "Active")
 
     page = request.args.get("page", 1, type=int)
     pagination = query.order_by(License.name).paginate(page=page, per_page=PER_PAGE, error_out=False)
@@ -67,20 +58,33 @@ def list_licenses():
         license_list=pagination.items,
         vendors=Vendor.query.order_by(Vendor.name).all(),
         categories=Category.query.order_by(Category.name).all(),
+        contracts=Contract.query.order_by(Contract.po_number).all(),
         statuses=License.STATUSES,
         thresholds=thresholds,
-        view=view,
         compute_expiration_status=compute_expiration_status,
     )
 
 
-@licenses_bp.route("/licenses/add", methods=["GET", "POST"])
+@licenses_bp.route("/licenses/new")
 @login_required
 @permission_required("manage_licenses")
-def add_license():
+def new_license_redirect():
+    contract_id = request.args.get("contract_id", type=int)
+    if not contract_id:
+        flash("Choose a contract to add a license to.", "danger")
+        return redirect(url_for("licenses.list_licenses"))
+    Contract.query.get_or_404(contract_id)
+    return redirect(url_for("licenses.add_license", contract_id=contract_id))
+
+
+@licenses_bp.route("/contracts/<int:contract_id>/licenses/add", methods=["GET", "POST"])
+@login_required
+@permission_required("manage_licenses")
+def add_license(contract_id):
+    contract = Contract.query.get_or_404(contract_id)
     form = LicenseForm()
     if form.validate_on_submit():
-        lic = License(created_by_id=current_user.id)
+        lic = License(contract=contract, vendor_id=contract.vendor_id, created_by_id=current_user.id)
         form.populate_obj(lic)
         lic.category_id = form.category_id.data or None
         db.session.add(lic)
@@ -89,7 +93,7 @@ def add_license():
         db.session.commit()
         flash(f"{lic.name} added.", "success")
         return redirect(url_for("licenses.view_license", id=lic.id))
-    return render_template("licenses/form.html", form=form, lic=None)
+    return render_template("licenses/form.html", form=form, lic=None, contract=contract)
 
 
 @licenses_bp.route("/licenses/<int:id>")

@@ -170,6 +170,7 @@ class School(db.Model):
     __tablename__ = "schools"
 
     TYPES = ["Elementary", "Middle School", "High School", "Alternative", "District Office", "Other"]
+    GRADES = ["PK", "K"] + [str(g) for g in range(1, 13)]
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False, index=True)
@@ -207,7 +208,7 @@ class Vendor(db.Model):
 
     @property
     def total_annual_spend(self):
-        return sum((lic.annual_cost or 0) for lic in self.licenses)
+        return sum((c.annual_cost or 0) for c in self.contracts)
 
     def __repr__(self):
         return f"<Vendor {self.name}>"
@@ -227,15 +228,16 @@ class License(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False, index=True)
+    # Derived from contract.vendor_id at creation time - licenses are
+    # always created from their contract's page now, so there's no
+    # separate vendor picker; this column is kept for direct vendor-license
+    # queries (Vendor.licenses) without a join through Contract.
     vendor_id = db.Column(db.Integer, db.ForeignKey("vendors.id"), nullable=False, index=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey("contracts.id"), nullable=False, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey("categories.id"), nullable=True)
     description = db.Column(db.Text)
 
     license_count = db.Column(db.Integer, nullable=False, default=0)
-
-    start_date = db.Column(db.Date)
-    expiration_date = db.Column(db.Date, index=True)
-    renewal_date = db.Column(db.Date)
 
     po_number = db.Column(db.String(100))
     support_url = db.Column(db.String(255))
@@ -249,9 +251,9 @@ class License(db.Model):
     created_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
 
     vendor = db.relationship("Vendor", back_populates="licenses")
+    contract = db.relationship("Contract", back_populates="licenses")
     category = db.relationship("Category", back_populates="licenses")
     allocations = db.relationship("LicenseAllocation", back_populates="license", cascade="all, delete-orphan")
-    contracts = db.relationship("Contract", back_populates="license")
 
     @property
     def assigned_licenses(self):
@@ -268,39 +270,35 @@ class License(db.Model):
         return round((self.assigned_licenses / self.license_count) * 100, 1)
 
     @property
-    def current_contract(self):
-        """The contract annual_cost/vendor_contact are drawn from: the
-        currently-active contract (end_date in the future) with the latest
-        end_date, or - if none are active - the most recently ended one.
-        None if this license has no contracts at all."""
-        if not self.contracts:
-            return None
-        today = date.today()
-        active = [c for c in self.contracts if c.end_date >= today]
-        return max(active, key=lambda c: c.end_date) if active else max(self.contracts, key=lambda c: c.end_date)
-
-    @property
     def vendor_contact(self):
-        contract = self.current_contract
-        return contract.vendor_contact if contract else None
+        return self.contract.vendor_contact if self.contract else None
 
     @property
-    def annual_cost(self):
-        """Total annual cost across all currently-active contracts (0 if
-        none are active) - a license with several concurrent contracts
-        (e.g. per-building site licenses) sums them."""
-        today = date.today()
-        return sum((c.annual_cost or 0) for c in self.contracts if c.end_date >= today)
+    def start_date(self):
+        return self.contract.start_date if self.contract else None
+
+    @start_date.setter
+    def start_date(self, value):
+        if self.contract:
+            self.contract.start_date = value
 
     @property
-    def cost_per_license(self):
-        if not self.license_count:
-            return 0.0
-        return round(float(self.annual_cost or 0) / self.license_count, 2)
+    def expiration_date(self):
+        return self.contract.end_date if self.contract else None
+
+    @expiration_date.setter
+    def expiration_date(self, value):
+        if self.contract:
+            self.contract.end_date = value
 
     @property
-    def unused_license_cost(self):
-        return round(self.available_licenses * self.cost_per_license, 2)
+    def renewal_date(self):
+        return self.contract.renewal_date if self.contract else None
+
+    @renewal_date.setter
+    def renewal_date(self, value):
+        if self.contract:
+            self.contract.renewal_date = value
 
     @property
     def days_until_expiration(self):
@@ -343,12 +341,7 @@ class Contract(db.Model):
     # contract_number, to avoid carrying two identifying numbers for the
     # same agreement.
     po_number = db.Column(db.String(100), nullable=False, index=True)
-    # Derived from license.vendor_id at creation time - contracts are
-    # always managed from the license detail page now, so there's no
-    # separate vendor picker; this column is kept for direct vendor-spend
-    # queries (Vendor.contracts) without a join through License.
     vendor_id = db.Column(db.Integer, db.ForeignKey("vendors.id"), nullable=False, index=True)
-    license_id = db.Column(db.Integer, db.ForeignKey("licenses.id"), nullable=False, index=True)
 
     start_date = db.Column(db.Date, nullable=False)
     end_date = db.Column(db.Date, nullable=False, index=True)
@@ -364,7 +357,7 @@ class Contract(db.Model):
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     vendor = db.relationship("Vendor", back_populates="contracts")
-    license = db.relationship("License", back_populates="contracts")
+    licenses = db.relationship("License", back_populates="contract")
 
     @property
     def days_until_end(self):

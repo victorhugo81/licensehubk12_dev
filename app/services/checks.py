@@ -18,7 +18,7 @@ def check_license_expirations():
     thresholds = get_thresholds()
     horizon = thresholds["upcoming_days"]
     upper = date.today() + timedelta(days=horizon)
-    for lic in License.query.filter(License.expiration_date.isnot(None), License.expiration_date <= upper).all():
+    for lic in License.query.join(License.contract).filter(Contract.end_date <= upper).all():
         status = compute_expiration_status(lic.expiration_date, thresholds)
         if status == STATUS_EXPIRED:
             notifications.notify(
@@ -111,7 +111,7 @@ def check_unused_licenses(min_unused=0.25):
                 "unused_licenses",
                 f"{lic.name} has unused licenses",
                 f"{lic.name} has {lic.available_licenses} unused license(s) "
-                f"(${lic.unused_license_cost:,.2f}/year).",
+                f"out of {lic.license_count}.",
                 severity="info",
                 related_object_type="license",
                 related_object_id=lic.id,

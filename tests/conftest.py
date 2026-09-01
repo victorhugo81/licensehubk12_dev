@@ -1,8 +1,10 @@
+from datetime import date, timedelta
+
 import pytest
 
 from app import create_app
 from app.extensions import db as _db
-from app.models import Category, License, LicenseAllocation, Role, School, Vendor
+from app.models import Category, Contract, License, LicenseAllocation, Role, School, Vendor
 
 
 @pytest.fixture()
@@ -70,8 +72,19 @@ def vendor(db):
 
 
 @pytest.fixture()
-def license_(db, vendor):
-    lic = License(name="TestSoft", vendor=vendor, license_count=100, status="Active")
+def contract(db, vendor):
+    c = Contract(
+        po_number="PO-TEST-1", vendor=vendor,
+        start_date=date.today(), end_date=date.today() + timedelta(days=365),
+    )
+    db.session.add(c)
+    db.session.commit()
+    return c
+
+
+@pytest.fixture()
+def license_(db, vendor, contract):
+    lic = License(name="TestSoft", vendor=vendor, contract=contract, license_count=100, status="Active")
     db.session.add(lic)
     db.session.commit()
     return lic

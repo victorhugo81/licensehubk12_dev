@@ -9,9 +9,9 @@ Built as part of the same suite as TrackItK12, AssistItK12, and AnalyticsK12, an
 - **Dashboard** — district-wide license status, utilization, expiring licenses (30/60/90-day filters), recent activity, and color-coded alerts.
 - **License management** — full CRUD with search, filtering, and server-side pagination; per-school allocation with a hard-enforced rule that allocations can never exceed a license's total license count.
 - **License utilization** — per-license breakdown with a Chart.js chart of allocation by school.
-- **Schools, vendors, and contracts** — full CRUD, with vendor pages rolling up spend and expiring licenses, and contracts tracking annual cost, vendor contact, renewal/cancellation deadlines.
+- **Schools, vendors, and contracts** — full CRUD, following the district's real setup order (School → Vendor → Contract → License): contracts are created under a vendor and can bundle multiple license titles, with vendor pages rolling up spend and expiring licenses, and contracts tracking vendor contact and renewal/cancellation deadlines.
 - **CSV import** — two-phase (preview, then commit) bulk import of license/allocation data; invalid rows are never written to the database.
-- **Reports** — inventory, expiring licenses, utilization, spending (by license/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
+- **Reports** — inventory, expiring licenses, utilization, spending (by contract/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
 - **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, and unused licenses.
 - **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI).
 - **Audit log** — every create/update/delete records who, what, when, from where, and the field-level diff.

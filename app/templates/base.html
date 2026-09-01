@@ -28,14 +28,11 @@
 
         <div class="nav-section-label">Licenses</div>
         <li class="nav-item">
-          <a class="nav-link {{ 'active' if request.endpoint == 'licenses.list_licenses' and not request.args.get('view') }}" href="{{ url_for('licenses.list_licenses') }}">
+          <a class="nav-link {{ 'active' if request.endpoint == 'licenses.list_licenses' }}" href="{{ url_for('licenses.list_licenses') }}">
             <i class="bi bi-collection"></i> All Licenses
           </a>
         </li>
         {% if current_user.is_authenticated and current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.add_license') }}"><i class="bi bi-plus-circle"></i> Add License</a>
-        </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('licenses.categories') }}"><i class="bi bi-tags"></i> Categories</a>
         </li>
@@ -43,15 +40,6 @@
           <a class="nav-link" href="{{ url_for('imports.upload') }}"><i class="bi bi-file-earmark-arrow-up"></i> Import CSV</a>
         </li>
         {% endif %}
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='active') }}"><i class="bi bi-check-circle"></i> Active Licenses</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='expiring') }}"><i class="bi bi-hourglass-split"></i> Expiring Licenses</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='expired') }}"><i class="bi bi-x-octagon"></i> Expired Licenses</a>
-        </li>
 
         <div class="nav-section-label">District</div>
         <li class="nav-item">

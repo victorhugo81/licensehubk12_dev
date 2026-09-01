@@ -18,6 +18,16 @@ def _visible_licenses():
     return query.all()
 
 
+def _visible_contracts():
+    """Contracts covering at least one license this user can see - Annual
+    Cost lives on Contract, not License, so spending reports roll up by
+    contract rather than by license."""
+    if current_user.has_role(Role.SCHOOL_ADMINISTRATOR):
+        contract_ids = {lic.contract_id for lic in _visible_licenses()}
+        return Contract.query.filter(Contract.id.in_(contract_ids)).all()
+    return Contract.query.all()
+
+
 @reports_bp.route("/")
 @login_required
 @permission_required("view_reports")
@@ -31,11 +41,11 @@ def index():
 def inventory():
     license_list = _visible_licenses()
     fmt = request.args.get("format")
-    headers = ["License", "Vendor", "Category", "Total", "Assigned", "Available", "Status", "Expiration Date", "Annual Cost"]
+    headers = ["License", "Vendor", "Category", "Total", "Assigned", "Available", "Status", "Expiration Date"]
     rows = [
         [lic.name, lic.vendor.name, lic.category.name if lic.category else "",
          lic.license_count, lic.assigned_licenses, lic.available_licenses, lic.status,
-         lic.expiration_date.isoformat() if lic.expiration_date else "", float(lic.annual_cost or 0)]
+         lic.expiration_date.isoformat() if lic.expiration_date else ""]
         for lic in license_list
     ]
     if fmt:
@@ -87,13 +97,13 @@ def utilization():
 @login_required
 @permission_required("view_reports")
 def spending():
-    license_list = _visible_licenses()
+    contract_list = _visible_contracts()
     fmt = request.args.get("format")
-    headers = ["Vendor", "License", "Annual Cost", "Total Licenses", "Cost Per License"]
-    rows = [[lic.vendor.name, lic.name, float(lic.annual_cost or 0), lic.license_count, lic.cost_per_license] for lic in license_list]
+    headers = ["Vendor", "PO Number", "Annual Cost", "Licenses"]
+    rows = [[c.vendor.name, c.po_number, float(c.annual_cost or 0), len(c.licenses)] for c in contract_list]
     if fmt:
-        return export(fmt, "license_spending", "License Spending", headers, rows)
-    return render_template("reports/spending.html", license_list=license_list)
+        return export(fmt, "contract_spending", "Contract Spending", headers, rows)
+    return render_template("reports/spending.html", contract_list=contract_list)
 
 
 @reports_bp.route("/school-allocation")

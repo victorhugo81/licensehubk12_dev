@@ -53,24 +53,16 @@
       <div class="card-header">License Information</div>
       <div class="card-body">
         <dl class="row mb-0 small">
-          <dt class="col-5">Start Date</dt><dd class="col-7">{{ lic.start_date | dateformat }}</dd>
-          <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ lic.expiration_date | dateformat }}</dd>
-          <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ lic.renewal_date | dateformat }}</dd>
+          <dt class="col-5">Contract</dt>
+          <dd class="col-7"><a href="{{ url_for('contracts.view_contract', id=lic.contract.id) }}">{{ lic.contract.po_number }}</a></dd>
           <dt class="col-5">PO Number</dt><dd class="col-7">{{ lic.po_number or '—' }}</dd>
-          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ lic.vendor_contact or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
+          <dt class="col-5">Start Date</dt><dd class="col-7">{{ lic.start_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>
+          <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ lic.expiration_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>
+          <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ lic.renewal_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>
+          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ lic.vendor_contact or '—' }} <span class="text-muted-soft">(from contract)</span></dd>
+          <dt class="col-5">Annual Cost</dt><dd class="col-7">{{ lic.contract.annual_cost | money }} <span class="text-muted-soft">(from contract)</span></dd>
           <dt class="col-5">Support URL</dt><dd class="col-7">{% if lic.support_url %}<a href="{{ lic.support_url }}" target="_blank" rel="noopener">{{ lic.support_url }}</a>{% else %}—{% endif %}</dd>
           <dt class="col-5">Login URL</dt><dd class="col-7">{% if lic.login_url %}<a href="{{ lic.login_url }}" target="_blank" rel="noopener">{{ lic.login_url }}</a>{% else %}—{% endif %}</dd>
-        </dl>
-      </div>
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header">Cost</div>
-      <div class="card-body">
-        <dl class="row mb-0 small">
-          <dt class="col-6">Annual Cost</dt><dd class="col-6">{{ lic.annual_cost | money }}</dd>
-          <dt class="col-6">Cost Per License</dt><dd class="col-6">{{ lic.cost_per_license | money }}</dd>
-          <dt class="col-6">Unused License Cost</dt><dd class="col-6">{{ lic.unused_license_cost | money }}</dd>
         </dl>
       </div>
     </div>
@@ -93,14 +85,23 @@
             {% for a in lic.allocations %}
             <tr>
               <td><a href="{{ url_for('schools.view_school', id=a.school_id) }}">{{ a.school.name }}</a></td>
-              <td>{{ a.allocated_count }}</td>
               {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+              <td>
+                <form method="post" action="{{ url_for('licenses.add_allocation', id=lic.id) }}" class="d-flex gap-1">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="school_id" value="{{ a.school_id }}">
+                  <input type="number" name="allocated_count" value="{{ a.allocated_count }}" min="0" class="form-control form-control-sm" style="width: 5.5rem;">
+                  <button class="btn btn-sm btn-outline-secondary" title="Save"><i class="bi bi-check-lg"></i></button>
+                </form>
+              </td>
               <td class="text-end">
                 <form method="post" action="{{ url_for('licenses.delete_allocation', id=lic.id, allocation_id=a.id) }}" onsubmit="return confirm('Remove this allocation?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
                 </form>
               </td>
+              {% else %}
+              <td>{{ a.allocated_count }}</td>
               {% endif %}
             </tr>
             {% else %}
@@ -128,40 +129,6 @@
         <p class="text-muted small mt-2 mb-0">Total allocated cannot exceed the district license count ({{ lic.license_count }}).</p>
       </div>
       {% endif %}
-    </div>
-
-    <div class="card mb-3">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Contracts</span>
-        {% if current_user.has_role('Administrator', 'IT Administrator') %}
-        <a href="{{ url_for('contracts.add_contract', license_id=lic.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add Contract</a>
-        {% endif %}
-      </div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>PO Number</th><th>End Date</th><th>Annual Cost</th>{% if current_user.has_role('Administrator', 'IT Administrator') %}<th></th>{% endif %}</tr></thead>
-          <tbody>
-            {% for c in lic.contracts %}
-            <tr>
-              <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.po_number or '—' }}</a></td>
-              <td>{{ c.end_date | dateformat }}</td>
-              <td>{{ c.annual_cost | money }}</td>
-              {% if current_user.has_role('Administrator', 'IT Administrator') %}
-              <td class="text-end text-nowrap">
-                <a href="{{ url_for('contracts.edit_contract', license_id=lic.id, id=c.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                <form method="post" action="{{ url_for('contracts.delete_contract', license_id=lic.id, id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete this contract?');">
-                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                  <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
-                </form>
-              </td>
-              {% endif %}
-            </tr>
-            {% else %}
-            <tr><td colspan="4" class="text-muted text-center py-3">No contracts yet.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
     </div>
   </div>
 </div>

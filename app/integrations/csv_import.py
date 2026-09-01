@@ -182,25 +182,28 @@ def validate_csv(file_stream) -> ImportPreview:
     return ImportPreview(rows=rows, total=len(rows), valid=valid, warnings=warnings, errors=errors)
 
 
-def _upsert_import_contract(lic, annual_cost):
-    """Annual cost lives on Contract, not License - but the CSV format has
-    no po_number/vendor_contact columns to key one on. Import instead
-    maintains one canonical, stable-keyed contract per license to hold the
-    imported figure, so re-importing an updated CSV updates that same
-    contract rather than creating duplicates."""
-    po_number = f"IMPORT-{lic.id}"
-    contract = Contract.query.filter_by(license_id=lic.id, po_number=po_number).first()
-    end_date = lic.expiration_date or (date.today() + timedelta(days=365))
+def _get_or_create_import_contract(vendor, license_name, end_date, annual_cost):
+    """Every License needs a Contract (required FK), and Annual Cost lives
+    on Contract - the CSV format has no po_number/vendor_contact columns to
+    key one on, so import instead maintains one canonical, stable-keyed
+    contract per license name/vendor pair, so re-importing an updated CSV
+    reuses that same contract (and updates its cost) rather than creating
+    duplicates. Must exist before the License row does, since
+    License.contract_id can't be null even briefly."""
+    po_number = f"IMPORT-{license_name.strip()}"[:100]
+    contract = Contract.query.filter_by(vendor_id=vendor.id, po_number=po_number).first()
     if contract is None:
         contract = Contract(
-            po_number=po_number, license=lic, vendor_id=lic.vendor_id,
+            po_number=po_number, vendor=vendor,
             start_date=date.today(), end_date=end_date,
-            payment_frequency="Annual",
+            payment_frequency="Annual", annual_cost=annual_cost,
         )
         db.session.add(contract)
+        db.session.flush()
     else:
         contract.end_date = end_date
-    contract.annual_cost = annual_cost
+        if annual_cost:
+            contract.annual_cost = annual_cost
     return contract
 
 
@@ -236,11 +239,13 @@ def commit_import(preview: ImportPreview, imported_by=None):
 
         lic = License.query.filter(db.func.lower(License.name) == license_name.lower()).first()
         if lic is None:
+            end_date = expiration or (date.today() + timedelta(days=365))
+            contract = _get_or_create_import_contract(vendor, license_name, end_date, annual_cost)
             lic = License(
                 name=license_name,
                 vendor=vendor,
+                contract=contract,
                 license_count=total_licenses or 0,
-                expiration_date=expiration,
                 status="Active",
                 created_by_id=imported_by.id if imported_by else None,
             )
@@ -250,12 +255,11 @@ def commit_import(preview: ImportPreview, imported_by=None):
         else:
             if total_licenses is not None:
                 lic.license_count = max(lic.license_count, total_licenses)
-            if expiration:
-                lic.expiration_date = expiration
+            if expiration and lic.contract:
+                lic.contract.end_date = expiration
+            if annual_cost and lic.contract:
+                lic.contract.annual_cost = annual_cost
             updated += 1
-
-        if annual_cost:
-            _upsert_import_contract(lic, annual_cost)
 
         try:
             allocation_service.set_allocation(lic, school, assigned_licenses)

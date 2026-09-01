@@ -2,21 +2,17 @@
 {% block title %}Licenses - LicenseHubK12{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">
-    {% if view == 'active' %}Active Licenses
-    {% elif view == 'expiring' %}Expiring Licenses
-    {% elif view == 'expired' %}Expired Licenses
-    {% else %}All Licenses{% endif %}
-  </h1>
+  <h1 class="h4 mb-0">All Licenses</h1>
   {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
-  <a href="{{ url_for('licenses.add_license') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add License</a>
+  <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newLicenseModal">
+    <i class="bi bi-plus-lg"></i> Add License
+  </button>
   {% endif %}
 </div>
 
 <div class="card mb-3">
   <div class="card-body">
     <form method="get" class="row g-2 align-items-end">
-      <input type="hidden" name="view" value="{{ view }}">
       <div class="col-md-3">
         <label class="form-label small mb-1" for="q">Search</label>
         <input type="search" id="q" name="q" class="form-control form-control-sm" value="{{ request.args.get('q', '') }}" placeholder="License name…">
@@ -92,4 +88,32 @@
     {% include "includes/pagination.html" %}
   </div>
 </div>
+
+{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+<div class="modal fade" id="newLicenseModal" tabindex="-1" aria-labelledby="newLicenseModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form method="get" action="{{ url_for('licenses.new_license_redirect') }}">
+        <div class="modal-header">
+          <h2 class="modal-title h5" id="newLicenseModalLabel">Add License</h2>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <label for="newLicenseContractId" class="form-label">Contract</label>
+          <select id="newLicenseContractId" name="contract_id" class="form-select" required>
+            <option value="" selected disabled>Choose a contract…</option>
+            {% for c in contracts %}
+            <option value="{{ c.id }}">{{ c.po_number }} &middot; {{ c.vendor.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Continue</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
 {% endblock %}

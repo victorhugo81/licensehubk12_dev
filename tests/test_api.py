@@ -20,14 +20,14 @@ def test_api_write_rejected_without_bearer_token(client, admin_user, vendor):
     assert resp.status_code == 401
 
 
-def test_api_write_succeeds_with_bearer_token(client, admin_user, vendor, db):
+def test_api_write_succeeds_with_bearer_token(client, admin_user, contract, db):
     admin_user.generate_api_key()
     db.session.commit()
 
     resp = client.post(
         "/api/licenses",
         headers={"Authorization": f"Bearer {admin_user.api_key}"},
-        json={"name": "ApiCreated", "vendor_id": vendor.id, "license_count": 20},
+        json={"name": "ApiCreated", "contract_id": contract.id, "license_count": 20},
     )
     assert resp.status_code == 201
     body = resp.get_json()

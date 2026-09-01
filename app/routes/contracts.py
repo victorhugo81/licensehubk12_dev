@@ -3,14 +3,14 @@ from flask_login import login_required
 
 from app.extensions import db
 from app.forms import ContractForm
-from app.models import Contract, License, Vendor
+from app.models import Contract, Vendor
 from app.services.audit import diff_changes, log_action
 from app.services.status import compute_expiration_status, get_thresholds
 from app.utils.decorators import permission_required
 
-# Adding/editing/deleting a contract is still done from its license's
+# Adding/editing/deleting a contract is still done from its vendor's
 # detail page (see add_contract/edit_contract/delete_contract below) - but
-# `list_contracts` gives a district-wide view across all licenses, linked
+# `list_contracts` gives a district-wide view across all vendors, linked
 # from the main nav.
 contracts_bp = Blueprint("contracts", __name__)
 
@@ -38,6 +38,18 @@ def list_contracts():
     )
 
 
+@contracts_bp.route("/contracts/new")
+@login_required
+@permission_required("manage_contracts")
+def new_contract_redirect():
+    vendor_id = request.args.get("vendor_id", type=int)
+    if not vendor_id:
+        flash("Choose a vendor to add a contract for.", "danger")
+        return redirect(url_for("contracts.list_contracts"))
+    Vendor.query.get_or_404(vendor_id)
+    return redirect(url_for("contracts.add_contract", vendor_id=vendor_id))
+
+
 def _form_data(c):
     return {
         "po_number": c.po_number, "start_date": c.start_date, "end_date": c.end_date,
@@ -47,22 +59,22 @@ def _form_data(c):
     }
 
 
-@contracts_bp.route("/licenses/<int:license_id>/contracts/add", methods=["GET", "POST"])
+@contracts_bp.route("/vendors/<int:vendor_id>/contracts/add", methods=["GET", "POST"])
 @login_required
 @permission_required("manage_contracts")
-def add_contract(license_id):
-    lic = License.query.get_or_404(license_id)
+def add_contract(vendor_id):
+    vendor = Vendor.query.get_or_404(vendor_id)
     form = ContractForm()
     if form.validate_on_submit():
-        contract = Contract(license=lic, vendor_id=lic.vendor_id)
+        contract = Contract(vendor=vendor)
         form.populate_obj(contract)
         db.session.add(contract)
         db.session.commit()
-        log_action("create", "contract", contract.id, {"po_number": contract.po_number, "license": lic.name})
+        log_action("create", "contract", contract.id, {"po_number": contract.po_number, "vendor": vendor.name})
         db.session.commit()
         flash(f"Contract {contract.po_number} added.", "success")
-        return redirect(url_for("licenses.view_license", id=lic.id))
-    return render_template("contracts/form.html", form=form, contract=None, lic=lic)
+        return redirect(url_for("contracts.view_contract", id=contract.id))
+    return render_template("contracts/form.html", form=form, contract=None, vendor=vendor)
 
 
 @contracts_bp.route("/contracts/<int:id>")
@@ -76,14 +88,14 @@ def view_contract(id):
     )
 
 
-@contracts_bp.route("/licenses/<int:license_id>/contracts/<int:id>/edit", methods=["GET", "POST"])
+@contracts_bp.route("/vendors/<int:vendor_id>/contracts/<int:id>/edit", methods=["GET", "POST"])
 @login_required
 @permission_required("manage_contracts")
-def edit_contract(license_id, id):
+def edit_contract(vendor_id, id):
     contract = Contract.query.get_or_404(id)
-    if contract.license_id != license_id:
+    if contract.vendor_id != vendor_id:
         abort(404)
-    lic = contract.license
+    vendor = contract.vendor
     before = _form_data(contract)
     form = ContractForm(obj=contract)
     if form.validate_on_submit():
@@ -93,20 +105,23 @@ def edit_contract(license_id, id):
         log_action("update", "contract", contract.id, changes)
         db.session.commit()
         flash(f"Contract {contract.po_number} updated.", "success")
-        return redirect(url_for("licenses.view_license", id=lic.id))
-    return render_template("contracts/form.html", form=form, contract=contract, lic=lic)
+        return redirect(url_for("contracts.view_contract", id=contract.id))
+    return render_template("contracts/form.html", form=form, contract=contract, vendor=vendor)
 
 
-@contracts_bp.route("/licenses/<int:license_id>/contracts/<int:id>/delete", methods=["POST"])
+@contracts_bp.route("/vendors/<int:vendor_id>/contracts/<int:id>/delete", methods=["POST"])
 @login_required
 @permission_required("manage_contracts")
-def delete_contract(license_id, id):
+def delete_contract(vendor_id, id):
     contract = Contract.query.get_or_404(id)
-    if contract.license_id != license_id:
+    if contract.vendor_id != vendor_id:
         abort(404)
+    if contract.licenses:
+        flash(f"Cannot delete contract {contract.po_number} while licenses are linked to it.", "danger")
+        return redirect(url_for("contracts.view_contract", id=id))
     number = contract.po_number
     db.session.delete(contract)
     log_action("delete", "contract", id, {"po_number": number})
     db.session.commit()
     flash(f"Contract {number} deleted.", "success")
-    return redirect(url_for("licenses.view_license", id=license_id))
+    return redirect(url_for("vendors.view_vendor", id=vendor_id))

@@ -57,12 +57,12 @@ def run_seed():
 
     # Schools - fictional district
     schools_data = [
-        ("Calexico High School", "CHS-01", "High School", "Maria Gonzalez", "9-12", 1450),
-        ("Enrique Camarena Junior High", "ECJ-02", "Middle School", "David Park", "6-8", 820),
-        ("William Moreno Junior High", "WMJ-03", "Middle School", "Angela Reyes", "6-8", 780),
-        ("Jefferson Elementary School", "JES-04", "Elementary", "Thomas Lee", "K-5", 610),
-        ("Rockwood Elementary School", "RES-05", "Elementary", "Susan Villa", "K-5", 540),
-        ("District Office", "DO-00", "District Office", "N/A", "N/A", 0),
+        ("Calexico High School", "CHS-01", "High School", "Maria Gonzalez", "9,10,11,12", 1450),
+        ("Enrique Camarena Junior High", "ECJ-02", "Middle School", "David Park", "6,7,8", 820),
+        ("William Moreno Junior High", "WMJ-03", "Middle School", "Angela Reyes", "6,7,8", 780),
+        ("Jefferson Elementary School", "JES-04", "Elementary", "Thomas Lee", "K,1,2,3,4,5", 610),
+        ("Rockwood Elementary School", "RES-05", "Elementary", "Susan Villa", "K,1,2,3,4,5", 540),
+        ("District Office", "DO-00", "District Office", "N/A", None, 0),
     ]
     schools = {}
     for name, code, school_type, principal, grades, count in schools_data:
@@ -88,32 +88,63 @@ def run_seed():
         )
     db.session.commit()
 
-    # Licenses
+    # Contracts - created under a vendor first, per the district's real
+    # setup order (School -> Vendor -> Contract -> License). Vendor contact
+    # is a term of the agreement and lives here; annual cost lives on the
+    # License(s) it covers instead, since one contract can bundle several.
+    contract_plan = [
+        ("CN-2026-IXL-01", "IXL Learning", TODAY - timedelta(days=347), TODAY + timedelta(days=18),
+         "Annual", True, "Jamie Cole", 112000),
+        ("CN-2026-CA-02", "Curriculum Associates", TODAY - timedelta(days=292), TODAY + timedelta(days=73),
+         "Annual", True, "Priya Nair", 135000),
+        ("CN-2025-BM-03", "Benchmark Education", TODAY - timedelta(days=362), TODAY - timedelta(days=3),
+         "Annual", False, "Chris Adams", 78000),
+        ("CN-2026-CV-04", "Canvas (Instructure)", TODAY - timedelta(days=155), TODAY + timedelta(days=210),
+         "Multi-Year", True, "Sam Rivera", 95000),
+        ("CN-2026-CL-05", "Clever", TODAY - timedelta(days=65), TODAY + timedelta(days=300),
+         "Annual", True, "Alex Kim", 42000),
+    ]
+    contracts = {}
+    for number, vendor_name, start, end, freq, auto, contact, amount in contract_plan:
+        contracts[vendor_name] = _get_or_create(
+            Contract, po_number=number,
+            defaults=dict(
+                vendor_id=vendors[vendor_name].id,
+                start_date=start, end_date=end, renewal_date=end - timedelta(days=30),
+                vendor_contact=contact, payment_frequency=freq, auto_renewal=auto,
+                cancellation_deadline=end - timedelta(days=45), annual_cost=amount,
+            ),
+        )
+    db.session.commit()
+
+    # Licenses - added under their contract, taking that contract's vendor
+    # and dates (start/expiration/renewal all live on the Contract now).
     license_data = [
-        dict(name="IXL", vendor=vendors["IXL Learning"], category=curriculum_cat,
-             license_count=4000, expiration_date=TODAY + timedelta(days=18),
+        dict(name="IXL", vendor=vendors["IXL Learning"], contract=contracts["IXL Learning"], category=curriculum_cat,
+             license_count=4000,
              description="Math and Language Arts practice platform."),
-        dict(name="i-Ready", vendor=vendors["Curriculum Associates"], category=assessment_cat,
-             license_count=5000, expiration_date=TODAY + timedelta(days=73),
+        dict(name="i-Ready", vendor=vendors["Curriculum Associates"], contract=contracts["Curriculum Associates"], category=assessment_cat,
+             license_count=5000,
              description="Adaptive diagnostic and instruction for reading and math."),
-        dict(name="Benchmark", vendor=vendors["Benchmark Education"], category=curriculum_cat,
-             license_count=3000, expiration_date=TODAY - timedelta(days=3),
+        dict(name="Benchmark", vendor=vendors["Benchmark Education"], contract=contracts["Benchmark Education"], category=curriculum_cat,
+             license_count=3000,
              description="K-6 literacy curriculum."),
-        dict(name="Canvas", vendor=vendors["Canvas (Instructure)"], category=lms_cat,
-             license_count=2500, expiration_date=TODAY + timedelta(days=210),
+        dict(name="Canvas", vendor=vendors["Canvas (Instructure)"], contract=contracts["Canvas (Instructure)"], category=lms_cat,
+             license_count=2500,
              description="Learning management system."),
-        dict(name="Clever", vendor=vendors["Clever"], category=sis_cat,
-             license_count=6000, expiration_date=TODAY + timedelta(days=300),
+        dict(name="Clever", vendor=vendors["Clever"], contract=contracts["Clever"], category=sis_cat,
+             license_count=6000,
              description="Single sign-on and rostering."),
     ]
     licenses = {}
     for data in license_data:
         name = data.pop("name")
         vendor = data.pop("vendor")
+        contract = data.pop("contract")
         category = data.pop("category")
         licenses[name] = _get_or_create(
             License, name=name,
-            defaults=dict(vendor=vendor, category=category, status="Active", start_date=TODAY - timedelta(days=300), **data),
+            defaults=dict(vendor=vendor, contract=contract, category=category, status="Active", **data),
         )
     db.session.commit()
 
@@ -137,33 +168,6 @@ def run_seed():
                 LicenseAllocation, license_id=lic.id, school_id=schools[school_name].id,
                 defaults=dict(allocated_count=count),
             )
-    db.session.commit()
-
-    # Contracts - annual cost and vendor contact are terms of the
-    # agreement, so they live here rather than on License.
-    contract_plan = [
-        ("CN-2026-IXL-01", "IXL Learning", "IXL", TODAY - timedelta(days=347), TODAY + timedelta(days=18),
-         112000, "Annual", True, "Jamie Cole"),
-        ("CN-2026-CA-02", "Curriculum Associates", "i-Ready", TODAY - timedelta(days=292), TODAY + timedelta(days=73),
-         135000, "Annual", True, "Priya Nair"),
-        ("CN-2025-BM-03", "Benchmark Education", "Benchmark", TODAY - timedelta(days=362), TODAY - timedelta(days=3),
-         78000, "Annual", False, "Chris Adams"),
-        ("CN-2026-CV-04", "Canvas (Instructure)", "Canvas", TODAY - timedelta(days=155), TODAY + timedelta(days=210),
-         95000, "Multi-Year", True, "Sam Rivera"),
-        ("CN-2026-CL-05", "Clever", "Clever", TODAY - timedelta(days=65), TODAY + timedelta(days=300),
-         42000, "Annual", True, "Alex Kim"),
-    ]
-    for number, vendor_name, lic_name, start, end, amount, freq, auto, contact in contract_plan:
-        _get_or_create(
-            Contract, po_number=number,
-            defaults=dict(
-                vendor_id=vendors[vendor_name].id, license_id=licenses[lic_name].id,
-                start_date=start, end_date=end, renewal_date=end - timedelta(days=30),
-                annual_cost=amount, vendor_contact=contact,
-                payment_frequency=freq, auto_renewal=auto,
-                cancellation_deadline=end - timedelta(days=45),
-            ),
-        )
     db.session.commit()
 
     # Users - fictional accounts, one per role

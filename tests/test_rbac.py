@@ -5,7 +5,6 @@ from tests.conftest import login, make_user
 
 
 @pytest.mark.parametrize("path", [
-    "/licenses/add",
     "/vendors/add",
     "/schools/add",
     "/administration/users/",
@@ -18,9 +17,15 @@ def test_viewer_cannot_access_write_or_admin_routes(client, viewer_user, path):
     assert resp.status_code == 403
 
 
-def test_viewer_cannot_add_contract(client, viewer_user, license_):
+def test_viewer_cannot_add_contract(client, viewer_user, vendor):
     login(client, "viewer@example.com")
-    resp = client.get(f"/licenses/{license_.id}/contracts/add")
+    resp = client.get(f"/vendors/{vendor.id}/contracts/add")
+    assert resp.status_code == 403
+
+
+def test_viewer_cannot_add_license(client, viewer_user, contract):
+    login(client, "viewer@example.com")
+    resp = client.get(f"/contracts/{contract.id}/licenses/add")
     assert resp.status_code == 403
 
 
@@ -40,10 +45,10 @@ def test_it_administrator_can_manage_vendors_but_not_users(client, db):
     assert client.get("/administration/settings/").status_code == 403
 
 
-def test_curriculum_administrator_can_manage_licenses_not_vendors(client, db):
+def test_curriculum_administrator_can_manage_licenses_not_vendors(client, db, contract):
     make_user(db, "curriculum@example.com", Role.CURRICULUM_ADMINISTRATOR)
     login(client, "curriculum@example.com")
-    assert client.get("/licenses/add").status_code == 200
+    assert client.get(f"/contracts/{contract.id}/licenses/add").status_code == 200
     assert client.get("/vendors/add").status_code == 403
     assert client.get("/schools/add").status_code == 403
 
