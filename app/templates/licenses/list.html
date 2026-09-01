@@ -21,14 +21,14 @@
         <label class="form-label small mb-1" for="vendor_id">Vendor</label>
         <select id="vendor_id" name="vendor_id" class="form-select form-select-sm">
           <option value="">All</option>
-          {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if request.args.get('vendor_id', type=int) == v.id }}>{{ v.name }}</option>{% endfor %}
+          {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-md-2">
         <label class="form-label small mb-1" for="category_id">Category</label>
         <select id="category_id" name="category_id" class="form-select form-select-sm">
           <option value="">All</option>
-          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if request.args.get('category_id', type=int) == c.id }}>{{ c.name }}</option>{% endfor %}
+          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (request.args.get('category_id') | int(0)) == c.id }}>{{ c.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-md-2">

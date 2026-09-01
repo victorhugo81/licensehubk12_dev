@@ -8,7 +8,7 @@
     <div class="col-md-3">
       <select name="user_id" class="form-select form-select-sm">
         <option value="">All users</option>
-        {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if request.args.get('user_id', type=int) == u.id }}>{{ u.full_name }}</option>{% endfor %}
+        {% for u in users %}<option value="{{ u.id }}" {{ 'selected' if (request.args.get('user_id') | int(0)) == u.id }}>{{ u.full_name }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-md-3">

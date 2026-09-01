@@ -3,11 +3,10 @@ from datetime import date, timedelta
 from flask import Blueprint, render_template, request
 from flask_login import current_user, login_required
 
-from app.models import AuditLog, License, LicenseAllocation, Role
-from app.services.status import (
-    STATUS_CRITICAL, STATUS_EXPIRED, STATUS_WARNING, STATUS_UPCOMING,
-    compute_expiration_status, get_thresholds,
-)
+from app.models import Category, License, LicenseAllocation, Role, School, Vendor
+from app.services import dashboard_metrics as metrics
+from app.services.status import compute_expiration_status, get_thresholds
+from app.utils.decorators import PERMISSIONS
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -21,37 +20,16 @@ def _visible_license_query():
     return query
 
 
-def dashboard_bucket(lic, thresholds):
-    if lic.status in {"Suspended", "Pending Renewal", "Cancelled"}:
-        return lic.status
-    exp_status = compute_expiration_status(lic.expiration_date, thresholds)
-    if exp_status == STATUS_EXPIRED:
-        return "Expired"
-    if exp_status in {STATUS_CRITICAL, STATUS_WARNING, STATUS_UPCOMING}:
-        return "Expiring Soon"
-    return "Active"
-
-
 @dashboard_bp.route("/")
 @login_required
 def index():
     thresholds = get_thresholds()
-    license_list = _visible_license_query().all()
+    can_view_district_wide = current_user.has_role(*PERMISSIONS["view_district_wide"])
 
-    total_licenses = len(license_list)
-    buckets = {"Active": 0, "Expiring Soon": 0, "Expired": 0, "Suspended": 0, "Pending Renewal": 0, "Cancelled": 0}
-    for lic in license_list:
-        buckets[dashboard_bucket(lic, thresholds)] += 1
+    query = metrics.apply_filters(_visible_license_query(), request.args, allow_school_filter=can_view_district_wide)
+    license_list = query.all()
 
-    active_licenses = buckets["Active"] + buckets["Expiring Soon"]
-    expiring_soon = buckets["Expiring Soon"]
-    expired = buckets["Expired"]
-
-    utilization = sorted(
-        [lic for lic in license_list if lic.license_count],
-        key=lambda lic: lic.utilization_pct,
-        reverse=True,
-    )[:6]
+    kpis = metrics.compute_kpis(license_list, thresholds)
 
     expiring_days = request.args.get("days", default=90, type=int)
     if expiring_days not in (30, 60, 90):
@@ -62,30 +40,50 @@ def index():
         key=lambda lic: lic.expiration_date,
     )[:10]
 
-    alerts = []
-    for lic in license_list:
-        status = compute_expiration_status(lic.expiration_date, thresholds)
-        if status == STATUS_EXPIRED:
-            days = -lic.days_until_expiration
-            alerts.append(("critical", f"{lic.name} license expired {days} day(s) ago."))
-        elif status == STATUS_CRITICAL:
-            alerts.append(("warning", f"{lic.name} license expires in {lic.days_until_expiration} days."))
-        elif status == STATUS_WARNING:
-            alerts.append(("info", f"{lic.name} license expires in {lic.days_until_expiration} days."))
-    alerts = alerts[:8]
+    total_annual_spend = metrics.total_spend(license_list)
+    upcoming_renewal_cost = metrics.upcoming_renewal_cost(license_list, expiring_days)
 
-    recent_activity = AuditLog.query.order_by(AuditLog.timestamp.desc()).limit(8).all()
+    utilization = sorted(
+        [lic for lic in license_list if lic.license_count],
+        key=lambda lic: lic.utilization_pct,
+        reverse=True,
+    )[:6]
+    underutilized = metrics.underutilized_licenses(license_list)[:8]
+
+    savings = metrics.potential_savings(license_list, thresholds)
+    quality = metrics.data_quality_score(license_list)
+
+    school_spend, vendor_spend, category_spend, school_rows, duplicates = [], [], [], [], []
+    if can_view_district_wide:
+        school_spend = metrics.spend_by_school(license_list)[:8]
+        vendor_spend = metrics.spend_by_vendor(license_list)[:8]
+        category_spend = metrics.spend_by_category(license_list)[:8]
+        school_rows = metrics.school_comparison(license_list, thresholds)
+        duplicates = metrics.potential_duplicates(license_list)
+    elif current_user.school:
+        total_annual_spend = metrics.spend_for_school(current_user.school, license_list)
 
     return render_template(
         "dashboard.html",
-        total_licenses=total_licenses,
-        active_licenses=active_licenses,
-        expiring_soon=expiring_soon,
-        expired=expired,
-        buckets=buckets,
+        can_view_district_wide=can_view_district_wide,
+        kpis=kpis,
+        total_annual_spend=total_annual_spend,
+        upcoming_renewal_cost=upcoming_renewal_cost,
         utilization=utilization,
+        underutilized=underutilized,
         expiring=expiring,
         expiring_days=expiring_days,
-        alerts=alerts,
-        recent_activity=recent_activity,
+        savings=savings,
+        quality=quality,
+        school_spend=school_spend,
+        vendor_spend=vendor_spend,
+        category_spend=category_spend,
+        school_rows=school_rows,
+        duplicates=duplicates,
+        vendors=Vendor.query.order_by(Vendor.name).all(),
+        categories=Category.query.order_by(Category.name).all(),
+        schools=School.query.filter_by(is_active=True).order_by(School.name).all() if can_view_district_wide else [],
+        statuses=License.STATUSES,
+        thresholds=thresholds,
+        compute_expiration_status=compute_expiration_status,
     )

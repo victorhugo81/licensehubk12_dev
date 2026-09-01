@@ -179,6 +179,63 @@ body {
   display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
 }
 
+.spend-hero {
+  background: var(--bs-main-color-primary);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 1.5rem 1.75rem;
+  box-shadow: var(--shadow-md);
+  height: 100%;
+}
+.spend-hero .spend-hero-label { color: rgba(255,255,255,0.75); font-size: 0.85rem; font-weight: 500; }
+.spend-hero .spend-hero-value { font-size: 2.4rem; font-weight: 700; line-height: 1.1; margin: 0.35rem 0; }
+.spend-hero .spend-hero-sub { color: rgba(255,255,255,0.7); font-size: 0.85rem; }
+
+/* ==========================================================================
+   DASHBOARD - scoped polish so the executive dashboard reads as a modern
+   SaaS command center rather than a stack of plain Bootstrap panels,
+   without changing card styling anywhere else in the app.
+   ========================================================================== */
+.dashboard-page .card {
+  overflow: hidden;
+  transition: box-shadow 0.15s ease;
+}
+.dashboard-page .card:hover { box-shadow: var(--shadow-md); }
+.dashboard-page .card-header {
+  background: var(--color-surface);
+  color: var(--bs-main-color-primary);
+  padding: 0.85rem 1.1rem;
+  font-size: 0.85rem;
+}
+.dashboard-page .stat-tile {
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+.dashboard-page .stat-tile:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+.dashboard-page table thead th {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+  background: var(--color-bg);
+}
+
+.chart-frame { position: relative; width: 100%; }
+.chart-frame-sm { height: 220px; }
+
+.status-legend { display: flex; flex-direction: column; gap: 0.6rem; }
+.status-legend-item {
+  display: flex; align-items: center; gap: 0.65rem;
+  padding-bottom: 0.6rem; border-bottom: 1px solid var(--color-border);
+}
+.status-legend-item:last-child { border-bottom: none; padding-bottom: 0; }
+.status-legend-dot { width: 0.7rem; height: 0.7rem; border-radius: 50%; flex-shrink: 0; }
+.status-legend-label { flex: 1; font-size: 0.9rem; color: var(--color-text); }
+.status-legend-value { font-weight: 700; color: var(--bs-main-color-primary); font-size: 1rem; }
+
 /* ==========================================================================
    STATUS TOKENS - single source for badge coloring (spec section 20)
    ========================================================================== */

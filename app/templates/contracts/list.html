@@ -18,7 +18,7 @@
     <div class="col-md-3">
       <select name="vendor_id" class="form-select form-select-sm">
         <option value="">All vendors</option>
-        {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if request.args.get('vendor_id', type=int) == v.id }}>{{ v.name }}</option>{% endfor %}
+        {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
       </select>
     </div>
     <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>

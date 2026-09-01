@@ -1,74 +1,283 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - LicenseHubK12{% endblock %}
 {% block content %}
+<div class="dashboard-page">
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">District Dashboard</h1>
   <span class="text-muted small">{{ current_user.role.name }}{% if current_user.school %} · {{ current_user.school.name }}{% endif %}</span>
 </div>
 
-<div class="row g-3 mb-4">
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="get" class="row g-2 align-items-end">
+      <input type="hidden" name="days" value="{{ expiring_days }}">
+      {% if can_view_district_wide %}
+      <div class="col-6 col-md">
+        <label class="form-label small mb-1" for="school_id">School</label>
+        <select id="school_id" name="school_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for s in schools %}<option value="{{ s.id }}" {{ 'selected' if (request.args.get('school_id') | int(0)) == s.id }}>{{ s.name }}</option>{% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-6 col-md">
+        <label class="form-label small mb-1" for="vendor_id">Vendor</label>
+        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md">
+        <label class="form-label small mb-1" for="category_id">Product / Category</label>
+        <select id="category_id" name="category_id" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (request.args.get('category_id') | int(0)) == c.id }}>{{ c.name }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md">
+        <label class="form-label small mb-1" for="status">Status</label>
+        <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+          <option value="">All</option>
+          {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-auto">
+        <a href="{{ url_for('dashboard.index') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="row g-3 mb-3">
   <div class="col-6 col-lg">
-    <div class="stat-tile">
+    <div class="stat-tile h-100">
       <div class="stat-icon mb-2" style="background: var(--status-info-bg); color: var(--status-info);"><i class="bi bi-collection"></i></div>
-      <div class="stat-value">{{ total_licenses }}</div>
+      <div class="stat-value">{{ kpis.total }}</div>
       <div class="stat-label">Total Licenses</div>
     </div>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile">
+    <div class="stat-tile h-100">
       <div class="stat-icon mb-2" style="background: var(--status-good-bg); color: var(--status-good);"><i class="bi bi-check-circle"></i></div>
-      <div class="stat-value">{{ active_licenses }}</div>
+      <div class="stat-value">{{ kpis.active }}</div>
       <div class="stat-label">Active Licenses</div>
+      <div class="text-muted-soft small mt-1">{{ kpis.active_pct }}% of total</div>
     </div>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile">
+    <div class="stat-tile h-100">
       <div class="stat-icon mb-2" style="background: var(--status-warning-bg); color: var(--status-warning);"><i class="bi bi-hourglass-split"></i></div>
-      <div class="stat-value">{{ expiring_soon }}</div>
+      <div class="stat-value">{{ kpis.expiring_soon }}</div>
       <div class="stat-label">Expiring Soon</div>
+      <div class="text-muted-soft small mt-1">Next {{ expiring_days }} days</div>
     </div>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile">
+    <div class="stat-tile h-100">
       <div class="stat-icon mb-2" style="background: var(--status-critical-bg); color: var(--status-critical);"><i class="bi bi-x-octagon"></i></div>
-      <div class="stat-value">{{ expired }}</div>
+      <div class="stat-value">{{ kpis.expired }}</div>
       <div class="stat-label">Expired</div>
+      <div class="text-muted-soft small mt-1">{{ kpis.expired_pct }}% of total</div>
     </div>
   </div>
 </div>
 
-{% if alerts %}
-<div class="card mb-4">
-  <div class="card-header">Alerts</div>
-  <div class="card-body">
-    {% for severity, text in alerts %}
-      <div class="alert-feed-item">
-        <span class="alert-dot {{ severity }}"></span>
-        <span>{{ text }}</span>
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="spend-hero">
+      <div class="spend-hero-label">{{ 'Total Annual District Spend' if can_view_district_wide else "Your School's Annual Spend" }}</div>
+      <div class="spend-hero-value">{{ total_annual_spend | money }}</div>
+      <div class="spend-hero-sub">
+        {% if can_view_district_wide %}
+          across {{ school_spend | length }} school{{ '' if school_spend | length == 1 else 's' }} with active allocations
+        {% else %}
+          estimated from your school's license allocations
+        {% endif %}
       </div>
-    {% endfor %}
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="spend-hero" style="background: var(--bs-main-color-secondary);">
+      <div class="spend-hero-label">Upcoming Renewal Cost</div>
+      <div class="spend-hero-value">{{ upcoming_renewal_cost | money }}</div>
+      <div class="spend-hero-sub">Contracts renewing in the next {{ expiring_days }} days</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card">
+      <div class="card-header">License Status</div>
+      <div class="card-body">
+        <div class="row align-items-center g-4">
+          <div class="col-md-5">
+            <div class="chart-frame chart-frame-sm mx-auto">
+              <canvas id="statusChart" role="img" aria-label="Donut chart of license status breakdown"></canvas>
+            </div>
+          </div>
+          <div class="col-md-7">
+            <div class="status-legend">
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#15803d;"></span>
+                <span class="status-legend-label">Active</span>
+                <span class="status-legend-value">{{ kpis.buckets.Active }}</span>
+              </div>
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#b45309;"></span>
+                <span class="status-legend-label">Expiring Soon</span>
+                <span class="status-legend-value">{{ kpis.buckets['Expiring Soon'] }}</span>
+              </div>
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#b91c1c;"></span>
+                <span class="status-legend-label">Expired</span>
+                <span class="status-legend-value">{{ kpis.buckets.Expired }}</span>
+              </div>
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#4a5568;"></span>
+                <span class="status-legend-label">Suspended</span>
+                <span class="status-legend-value">{{ kpis.buckets.Suspended }}</span>
+              </div>
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#1d4ed8;"></span>
+                <span class="status-legend-label">Pending Renewal</span>
+                <span class="status-legend-value">{{ kpis.buckets['Pending Renewal'] }}</span>
+              </div>
+              <div class="status-legend-item">
+                <span class="status-legend-dot" style="background:#98A2B3;"></span>
+                <span class="status-legend-label">Cancelled</span>
+                <span class="status-legend-value">{{ kpis.buckets.Cancelled }}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-12">
+    <div class="card h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>Upcoming Renewals</span>
+        <div class="d-flex gap-2 align-items-center">
+          <div class="btn-group btn-group-sm" role="group" aria-label="Filter by days">
+            {% set base_args = request.args.to_dict() %}
+            {% for d in [30, 60, 90] %}
+              <a href="{{ url_for('dashboard.index', **dict(base_args, days=d)) }}" class="btn btn-outline-secondary {{ 'active' if expiring_days == d }}">{{ d }}d</a>
+            {% endfor %}
+          </div>
+          <a href="{{ url_for('reports.expiring', days=expiring_days, format='csv') }}" class="btn btn-sm btn-outline-secondary" title="Export CSV"><i class="bi bi-download"></i></a>
+        </div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>License</th><th>Vendor</th><th>Expiration</th><th>Licenses</th><th>Annual Cost</th></tr></thead>
+          <tbody>
+            {% for sw in expiring %}
+            {% set computed = compute_expiration_status(sw.expiration_date, thresholds) %}
+            <tr class="{{ 'table-danger' if computed == 'expired' else 'table-warning' if computed == 'critical' else '' }}">
+              <td><a href="{{ url_for('licenses.view_license', id=sw.id) }}">{{ sw.name }}</a></td>
+              <td>{{ sw.vendor.name }}</td>
+              <td>{{ sw.expiration_date | dateformat }}</td>
+              <td>{{ sw.license_count }}</td>
+              <td>{{ sw.contract.annual_cost | money }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="text-muted text-center py-3">Nothing expiring in this window.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% if can_view_district_wide %}
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Spending by School</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>School</th><th>Spend</th></tr></thead>
+          <tbody>
+            {% for school, amount in school_spend %}
+            <tr><td><a href="{{ url_for('dashboard.index', school_id=school.id) }}">{{ school.name }}</a></td><td>{{ amount | money }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No spend data.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Spending by Vendor</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Vendor</th><th>Spend</th></tr></thead>
+          <tbody>
+            {% for vendor, amount in vendor_spend %}
+            <tr><td><a href="{{ url_for('vendors.view_vendor', id=vendor.id) }}">{{ vendor.name }}</a></td><td>{{ amount | money }}</td></tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No spend data.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Spending by Category</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Category</th><th>Spend</th></tr></thead>
+          <tbody>
+            {% for cat, amount in category_spend %}
+            <tr>
+              <td>{% if cat %}<a href="{{ url_for('dashboard.index', category_id=cat.id) }}">{{ cat.name }}</a>{% else %}Uncategorized{% endif %}</td>
+              <td>{{ amount | money }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No spend data.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">Potential Duplicate Software <span class="text-muted-soft small">— Review</span></div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Category</th><th>Licenses</th></tr></thead>
+          <tbody>
+            {% for cat, lics in duplicates %}
+            <tr>
+              <td>{{ cat.name }}</td>
+              <td>{% for lic in lics %}<a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a> ({{ lic.vendor.name }}){% if not loop.last %}, {% endif %}{% endfor %}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="2" class="text-muted text-center py-3">No potential duplicates found.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
   </div>
 </div>
 {% endif %}
 
-<div class="row g-3">
-  <div class="col-lg-4">
-    <div class="card h-100">
-      <div class="card-header">License Status</div>
-      <div class="card-body">
-        {% for label, count in buckets.items() %}
-          {% if count %}
-          <div class="d-flex justify-content-between align-items-center mb-2">
-            <span>{{ label }}</span>
-            <span class="fw-semibold">{{ count }}</span>
-          </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </div>
-  </div>
-
-  <div class="col-lg-8">
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
     <div class="card h-100">
       <div class="card-header">License Utilization</div>
       <div class="card-body">
@@ -88,59 +297,104 @@
       </div>
     </div>
   </div>
-</div>
-
-<div class="row g-3 mt-1">
-  <div class="col-lg-8">
+  <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header d-flex justify-content-between align-items-center">
-        <span>Expiring Licenses</span>
-        <div class="btn-group btn-group-sm" role="group" aria-label="Filter by days">
-          {% for d in [30, 60, 90] %}
-            <a href="{{ url_for('dashboard.index', days=d) }}" class="btn btn-outline-secondary {{ 'active' if expiring_days == d }}">{{ d }}d</a>
-          {% endfor %}
-        </div>
-      </div>
+      <div class="card-header">Underutilized Licenses</div>
       <div class="table-responsive">
-        <table class="table table-hover mb-0">
-          <thead><tr><th>License</th><th>Vendor</th><th>Expiration</th><th>Licenses</th></tr></thead>
+        <table class="table table-sm mb-0">
+          <thead><tr><th>License</th><th>Purchased</th><th>Assigned</th><th>Utilization</th></tr></thead>
           <tbody>
-            {% for sw in expiring %}
+            {% for lic in underutilized %}
             <tr>
-              <td><a href="{{ url_for('licenses.view_license', id=sw.id) }}">{{ sw.name }}</a></td>
-              <td>{{ sw.vendor.name }}</td>
-              <td>{{ sw.expiration_date | dateformat }}</td>
-              <td>{{ sw.license_count }}</td>
+              <td><a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a></td>
+              <td>{{ lic.license_count }}</td>
+              <td>{{ lic.assigned_licenses }}</td>
+              <td><span class="status-badge {{ 'status-critical' if lic.utilization_pct < 20 else 'status-warning' }}">{{ lic.utilization_pct }}%</span></td>
             </tr>
             {% else %}
-            <tr><td colspan="4" class="text-muted text-center py-3">Nothing expiring in this window.</td></tr>
+            <tr><td colspan="4" class="text-muted text-center py-3">Nothing underutilized right now.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
   </div>
+</div>
 
-  <div class="col-lg-4">
+<div class="row g-3 mb-4">
+  <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header">Recent Activity</div>
+      <div class="card-header">Potential Savings <span class="text-muted-soft small">— estimated, not guaranteed</span></div>
       <div class="card-body">
-        {% for log in recent_activity %}
-          <div class="alert-feed-item">
-            <i class="bi bi-clock-history text-muted-soft mt-1"></i>
-            <div>
-              <div class="small">
-                <strong>{{ log.user.full_name if log.user else 'System' }}</strong>
-                {{ log.action }}d {{ log.object_type }}
-              </div>
-              <div class="text-muted-soft small">{{ log.timestamp | timesince }}</div>
-            </div>
-          </div>
-        {% else %}
-          <p class="text-muted mb-0">No activity yet.</p>
+        <div class="h3 fw-bold mb-2">{{ savings.total | money }}</div>
+        <div class="d-flex justify-content-between small mb-1"><span>Expired but still marked Active</span><span class="fw-semibold">{{ savings.expired | money }}</span></div>
+        <div class="d-flex justify-content-between small"><span>Extremely underutilized seats (&lt;20%)</span><span class="fw-semibold">{{ savings.underutilized | money }}</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header">License Data Quality</div>
+      <div class="card-body">
+        <div class="h3 fw-bold mb-1">{{ quality.pct }}%</div>
+        <div class="text-muted small mb-2">{{ quality.missing_fields }} of {{ quality.total_fields }} required fields need attention.</div>
+        {% for lic, label in quality.issues[:5] %}
+          <div class="small text-muted-soft"><a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a> — {{ label }}</div>
         {% endfor %}
       </div>
     </div>
   </div>
 </div>
+
+{% if can_view_district_wide %}
+<div class="card mb-4">
+  <div class="card-header">School Comparison</div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>School</th><th>Licenses</th><th>Active</th><th>Expiring</th><th>Expired</th><th>Spend</th><th>Cost/Student</th><th>Avg. Utilization</th></tr></thead>
+      <tbody>
+        {% for row in school_rows %}
+        <tr>
+          <td><a href="{{ url_for('schools.view_school', id=row.school.id) }}">{{ row.school.name }}</a></td>
+          <td>{{ row.licenses }}</td>
+          <td>{{ row.active }}</td>
+          <td>{{ row.expiring }}</td>
+          <td>{{ row.expired }}</td>
+          <td>{{ row.spend | money }}</td>
+          <td>{{ row.cost_per_student | money if row.cost_per_student is not none else '—' }}</td>
+          <td>{{ row.utilization }}%</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" class="text-muted text-center py-3">No school data yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<script>
+  new Chart(document.getElementById('statusChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Active', 'Expiring Soon', 'Expired', 'Suspended', 'Pending Renewal', 'Cancelled'],
+      datasets: [{
+        data: [
+          {{ kpis.buckets.Active }}, {{ kpis.buckets['Expiring Soon'] }}, {{ kpis.buckets.Expired }},
+          {{ kpis.buckets.Suspended }}, {{ kpis.buckets['Pending Renewal'] }}, {{ kpis.buckets.Cancelled }}
+        ],
+        backgroundColor: ['#15803d', '#b45309', '#b91c1c', '#4a5568', '#1d4ed8', '#98A2B3'],
+      }]
+    },
+    options: {
+      maintainAspectRatio: false,
+      cutout: '68%',
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
 {% endblock %}
