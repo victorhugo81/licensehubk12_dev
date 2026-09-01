@@ -8,17 +8,17 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Software</th><th>Vendor</th><th>Category</th><th>License Type</th><th>Total</th><th>Assigned</th><th>Available</th><th>Status</th><th>Expiration</th><th>Annual Cost</th></tr></thead>
+      <thead><tr><th>License</th><th>Vendor</th><th>Category</th><th>Total</th><th>Assigned</th><th>Available</th><th>Status</th><th>Expiration</th><th>Annual Cost</th></tr></thead>
       <tbody>
-        {% for s in software_list %}
+        {% for lic in license_list %}
         <tr>
-          <td>{{ s.name }}</td><td>{{ s.vendor.name }}</td><td>{{ s.category.name if s.category else '—' }}</td>
-          <td>{{ s.license_type }}</td><td>{{ s.license_count }}</td><td>{{ s.assigned_licenses }}</td>
-          <td>{{ s.available_licenses }}</td><td>{{ s.status }}</td><td>{{ s.expiration_date | dateformat }}</td>
-          <td>{{ s.annual_cost | money }}</td>
+          <td>{{ lic.name }}</td><td>{{ lic.vendor.name }}</td><td>{{ lic.category.name if lic.category else '—' }}</td>
+          <td>{{ lic.license_count }}</td><td>{{ lic.assigned_licenses }}</td>
+          <td>{{ lic.available_licenses }}</td><td>{{ lic.status }}</td><td>{{ lic.expiration_date | dateformat }}</td>
+          <td>{{ lic.annual_cost | money }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="10" class="text-muted text-center py-4">No software to report.</td></tr>
+        <tr><td colspan="9" class="text-muted text-center py-4">No licenses to report.</td></tr>
         {% endfor %}
       </tbody>
     </table>

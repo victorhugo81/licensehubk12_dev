@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{% block title %}Contracts - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Contracts</h1>
+
+<div class="card mb-3"><div class="card-body">
+  <form method="get" class="row g-2">
+    <div class="col-md-4">
+      <input type="search" name="q" class="form-control form-control-sm" placeholder="PO number…" value="{{ request.args.get('q', '') }}">
+    </div>
+    <div class="col-md-3">
+      <select name="vendor_id" class="form-select form-select-sm">
+        <option value="">All vendors</option>
+        {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if request.args.get('vendor_id', type=int) == v.id }}>{{ v.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+  </form>
+</div></div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>PO Number</th><th>Vendor</th><th>Start Date</th><th>End Date</th><th>Annual Cost</th></tr></thead>
+      <tbody>
+        {% for c in contracts %}
+        <tr class="{{ 'table-danger' if c.days_until_end < 0 else 'table-warning' if c.days_until_end <= 30 else '' }}">
+          <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.po_number }}</a></td>
+          <td>{{ c.vendor.name }}</td>
+          <td>{{ c.start_date | dateformat }}</td>
+          <td>{{ c.end_date | dateformat }}</td>
+          <td>{{ c.annual_cost | money }}</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-center py-4">No contracts found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div class="card-body">{% include "includes/pagination.html" %}</div>
+</div>
+{% endblock %}

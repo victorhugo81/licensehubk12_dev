@@ -6,7 +6,7 @@ from datetime import date, timedelta
 
 from app.extensions import db
 from app.models import (
-    Category, Contract, LicenseAllocation, Role, School, Setting, Software, User, Vendor,
+    Category, Contract, License, LicenseAllocation, Role, School, Setting, User, Vendor,
 )
 
 TODAY = date.today()
@@ -88,8 +88,8 @@ def run_seed():
         )
     db.session.commit()
 
-    # Software / licenses
-    software_data = [
+    # Licenses
+    license_data = [
         dict(name="IXL", vendor=vendors["IXL Learning"], category=curriculum_cat,
              license_count=4000, expiration_date=TODAY + timedelta(days=18),
              description="Math and Language Arts practice platform."),
@@ -106,18 +106,18 @@ def run_seed():
              license_count=6000, expiration_date=TODAY + timedelta(days=300),
              description="Single sign-on and rostering."),
     ]
-    software = {}
-    for data in software_data:
+    licenses = {}
+    for data in license_data:
         name = data.pop("name")
         vendor = data.pop("vendor")
         category = data.pop("category")
-        software[name] = _get_or_create(
-            Software, name=name,
+        licenses[name] = _get_or_create(
+            License, name=name,
             defaults=dict(vendor=vendor, category=category, status="Active", start_date=TODAY - timedelta(days=300), **data),
         )
     db.session.commit()
 
-    # Allocations (kept within each software's license_count)
+    # Allocations (kept within each license's license_count)
     allocation_plan = {
         "IXL": [("Calexico High School", 800), ("Enrique Camarena Junior High", 700),
                 ("William Moreno Junior High", 650), ("Rockwood Elementary School", 500),
@@ -130,36 +130,36 @@ def run_seed():
                    ("William Moreno Junior High", 780), ("Jefferson Elementary School", 610),
                    ("Rockwood Elementary School", 540)],
     }
-    for sw_name, allocations in allocation_plan.items():
-        sw = software[sw_name]
+    for lic_name, allocations in allocation_plan.items():
+        lic = licenses[lic_name]
         for school_name, count in allocations:
             _get_or_create(
-                LicenseAllocation, software_id=sw.id, school_id=schools[school_name].id,
+                LicenseAllocation, license_id=lic.id, school_id=schools[school_name].id,
                 defaults=dict(allocated_count=count),
             )
     db.session.commit()
 
-    # Contracts - license type, annual cost and vendor contact are terms of
-    # the agreement, so they live here rather than on Software.
+    # Contracts - annual cost and vendor contact are terms of the
+    # agreement, so they live here rather than on License.
     contract_plan = [
         ("CN-2026-IXL-01", "IXL Learning", "IXL", TODAY - timedelta(days=347), TODAY + timedelta(days=18),
-         "District License", 112000, "Annual", True, "Jamie Cole"),
+         112000, "Annual", True, "Jamie Cole"),
         ("CN-2026-CA-02", "Curriculum Associates", "i-Ready", TODAY - timedelta(days=292), TODAY + timedelta(days=73),
-         "District License", 135000, "Annual", True, "Priya Nair"),
+         135000, "Annual", True, "Priya Nair"),
         ("CN-2025-BM-03", "Benchmark Education", "Benchmark", TODAY - timedelta(days=362), TODAY - timedelta(days=3),
-         "Site License", 78000, "Annual", False, "Chris Adams"),
+         78000, "Annual", False, "Chris Adams"),
         ("CN-2026-CV-04", "Canvas (Instructure)", "Canvas", TODAY - timedelta(days=155), TODAY + timedelta(days=210),
-         "District License", 95000, "Multi-Year", True, "Sam Rivera"),
+         95000, "Multi-Year", True, "Sam Rivera"),
         ("CN-2026-CL-05", "Clever", "Clever", TODAY - timedelta(days=65), TODAY + timedelta(days=300),
-         "District License", 42000, "Annual", True, "Alex Kim"),
+         42000, "Annual", True, "Alex Kim"),
     ]
-    for number, vendor_name, sw_name, start, end, license_type, amount, freq, auto, contact in contract_plan:
+    for number, vendor_name, lic_name, start, end, amount, freq, auto, contact in contract_plan:
         _get_or_create(
-            Contract, contract_number=number,
+            Contract, po_number=number,
             defaults=dict(
-                vendor_id=vendors[vendor_name].id, software_id=software[sw_name].id,
+                vendor_id=vendors[vendor_name].id, license_id=licenses[lic_name].id,
                 start_date=start, end_date=end, renewal_date=end - timedelta(days=30),
-                license_type=license_type, annual_cost=amount, vendor_contact=contact,
+                annual_cost=amount, vendor_contact=contact,
                 payment_frequency=freq, auto_renewal=auto,
                 cancellation_deadline=end - timedelta(days=45),
             ),
@@ -182,5 +182,5 @@ def run_seed():
             db.session.add(user)
     db.session.commit()
 
-    print("Seeded roles, categories, schools, vendors, software, allocations, contracts and demo users.")
+    print("Seeded roles, categories, schools, vendors, licenses, allocations, contracts and demo users.")
     print("Demo login: victor.solis@licensehubk12.example.org / ChangeMe!2026")

@@ -3,27 +3,25 @@
 {% block title %}{{ 'Edit' if contract else 'Add' }} Contract - LicenseHubK12{% endblock %}
 {% block content %}
 <h1 class="h4 mb-1">{{ 'Edit' if contract else 'Add' }} Contract</h1>
-<p class="text-muted mb-3">{{ software.name }} &middot; {{ software.vendor.name }}</p>
+<p class="text-muted mb-3">{{ lic.name }} &middot; {{ lic.vendor.name }}</p>
 <div class="card"><div class="card-body">
   <form method="post" novalidate>
     {{ form.hidden_tag() }}
     <div class="row">
-      {{ field(form.contract_number, "col-md-6") }}
-      {{ field(form.license_type, "col-md-6") }}
+      {{ field(form.po_number, "col-md-6") }}
       {{ field(form.payment_frequency, "col-md-6") }}
       {{ field(form.annual_cost, "col-md-6") }}
       {{ field(form.start_date, "col-md-4") }}
       {{ field(form.end_date, "col-md-4") }}
       {{ field(form.renewal_date, "col-md-4") }}
       {{ field(form.cancellation_deadline, "col-md-6") }}
-      {{ field(form.po_number, "col-md-6") }}
       {{ field(form.vendor_contact, "col-md-6") }}
       {{ field(form.auto_renewal, "col-md-6") }}
       {{ field(form.notes, "col-12") }}
     </div>
     <div class="d-flex gap-2">
       {{ form.submit(class="btn btn-primary") }}
-      <a href="{{ url_for('licenses.view_software', id=software.id) }}" class="btn btn-outline-secondary">Cancel</a>
+      <a href="{{ url_for('licenses.view_license', id=lic.id) }}" class="btn btn-outline-secondary">Cancel</a>
     </div>
   </form>
 </div></div>

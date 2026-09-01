@@ -1,22 +1,22 @@
 {% extends "base.html" %}
 {% from "includes/macros.html" import field %}
-{% block title %}{{ sw.name }} - LicenseHubK12{% endblock %}
+{% block title %}{{ lic.name }} - LicenseHubK12{% endblock %}
 {% block content %}
 <div class="card mb-4">
   <div class="card-body">
     <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
       <div>
-        <h1 class="h4 mb-0">{{ sw.name }}</h1>
-        <p class="text-muted mb-1">{{ sw.category.name if sw.category else 'Uncategorized' }} · {{ sw.vendor.name }}</p>
-        {% if sw.status != 'Active' %}
-          <span class="status-badge status-neutral">{{ sw.status }}</span>
+        <h1 class="h4 mb-0">{{ lic.name }}</h1>
+        <p class="text-muted mb-1">{{ lic.category.name if lic.category else 'Uncategorized' }} · {{ lic.vendor.name }}</p>
+        {% if lic.status != 'Active' %}
+          <span class="status-badge status-neutral">{{ lic.status }}</span>
         {% else %}
           <span class="status-badge status-{{ computed_status }}">{{ status_label(computed_status) }}</span>
         {% endif %}
       </div>
       <div class="d-flex gap-2">
         {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
-        <a href="{{ url_for('licenses.edit_software', id=sw.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+        <a href="{{ url_for('licenses.edit_license', id=lic.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
         <button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="modal" data-bs-target="#deleteModal"><i class="bi bi-trash"></i> Delete</button>
         {% endif %}
       </div>
@@ -25,25 +25,25 @@
     <div class="row g-3 mt-2">
       <div class="col-6 col-md-3">
         <div class="text-muted small">Total Licenses</div>
-        <div class="fs-5 fw-semibold">{{ sw.license_count }}</div>
+        <div class="fs-5 fw-semibold">{{ lic.license_count }}</div>
       </div>
       <div class="col-6 col-md-3">
         <div class="text-muted small">Assigned</div>
-        <div class="fs-5 fw-semibold">{{ sw.assigned_licenses }}</div>
+        <div class="fs-5 fw-semibold">{{ lic.assigned_licenses }}</div>
       </div>
       <div class="col-6 col-md-3">
         <div class="text-muted small">Available</div>
-        <div class="fs-5 fw-semibold">{{ sw.available_licenses }}</div>
+        <div class="fs-5 fw-semibold">{{ lic.available_licenses }}</div>
       </div>
       <div class="col-6 col-md-3">
         <div class="text-muted small">Utilization</div>
-        <div class="fs-5 fw-semibold">{{ sw.utilization_pct }}%</div>
+        <div class="fs-5 fw-semibold">{{ lic.utilization_pct }}%</div>
       </div>
     </div>
     <div class="progress mt-2" style="height: 0.85rem;">
-      <div class="progress-bar {{ 'progress-bar-critical' if sw.utilization_pct >= 100 else 'progress-bar-warning' if sw.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ sw.utilization_pct }}%"></div>
+      <div class="progress-bar {{ 'progress-bar-critical' if lic.utilization_pct >= 100 else 'progress-bar-warning' if lic.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ lic.utilization_pct }}%"></div>
     </div>
-    <a href="{{ url_for('licenses.utilization', id=sw.id) }}" class="small d-inline-block mt-2">View detailed utilization &amp; chart &rarr;</a>
+    <a href="{{ url_for('licenses.utilization', id=lic.id) }}" class="small d-inline-block mt-2">View detailed utilization &amp; chart &rarr;</a>
   </div>
 </div>
 
@@ -53,14 +53,13 @@
       <div class="card-header">License Information</div>
       <div class="card-body">
         <dl class="row mb-0 small">
-          <dt class="col-5">License Type</dt><dd class="col-7">{{ sw.license_type or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
-          <dt class="col-5">Start Date</dt><dd class="col-7">{{ sw.start_date | dateformat }}</dd>
-          <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ sw.expiration_date | dateformat }}</dd>
-          <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ sw.renewal_date | dateformat }}</dd>
-          <dt class="col-5">PO Number</dt><dd class="col-7">{{ sw.po_number or '—' }}</dd>
-          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ sw.vendor_contact or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
-          <dt class="col-5">Support URL</dt><dd class="col-7">{% if sw.support_url %}<a href="{{ sw.support_url }}" target="_blank" rel="noopener">{{ sw.support_url }}</a>{% else %}—{% endif %}</dd>
-          <dt class="col-5">Login URL</dt><dd class="col-7">{% if sw.login_url %}<a href="{{ sw.login_url }}" target="_blank" rel="noopener">{{ sw.login_url }}</a>{% else %}—{% endif %}</dd>
+          <dt class="col-5">Start Date</dt><dd class="col-7">{{ lic.start_date | dateformat }}</dd>
+          <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ lic.expiration_date | dateformat }}</dd>
+          <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ lic.renewal_date | dateformat }}</dd>
+          <dt class="col-5">PO Number</dt><dd class="col-7">{{ lic.po_number or '—' }}</dd>
+          <dt class="col-5">Vendor Contact</dt><dd class="col-7">{{ lic.vendor_contact or '—' }} <span class="text-muted-soft">(from current contract)</span></dd>
+          <dt class="col-5">Support URL</dt><dd class="col-7">{% if lic.support_url %}<a href="{{ lic.support_url }}" target="_blank" rel="noopener">{{ lic.support_url }}</a>{% else %}—{% endif %}</dd>
+          <dt class="col-5">Login URL</dt><dd class="col-7">{% if lic.login_url %}<a href="{{ lic.login_url }}" target="_blank" rel="noopener">{{ lic.login_url }}</a>{% else %}—{% endif %}</dd>
         </dl>
       </div>
     </div>
@@ -69,17 +68,17 @@
       <div class="card-header">Cost</div>
       <div class="card-body">
         <dl class="row mb-0 small">
-          <dt class="col-6">Annual Cost</dt><dd class="col-6">{{ sw.annual_cost | money }}</dd>
-          <dt class="col-6">Cost Per License</dt><dd class="col-6">{{ sw.cost_per_license | money }}</dd>
-          <dt class="col-6">Unused License Cost</dt><dd class="col-6">{{ sw.unused_license_cost | money }}</dd>
+          <dt class="col-6">Annual Cost</dt><dd class="col-6">{{ lic.annual_cost | money }}</dd>
+          <dt class="col-6">Cost Per License</dt><dd class="col-6">{{ lic.cost_per_license | money }}</dd>
+          <dt class="col-6">Unused License Cost</dt><dd class="col-6">{{ lic.unused_license_cost | money }}</dd>
         </dl>
       </div>
     </div>
 
-    {% if sw.notes %}
+    {% if lic.notes %}
     <div class="card mb-3">
       <div class="card-header">Notes</div>
-      <div class="card-body"><p class="mb-0 small">{{ sw.notes }}</p></div>
+      <div class="card-body"><p class="mb-0 small">{{ lic.notes }}</p></div>
     </div>
     {% endif %}
   </div>
@@ -91,13 +90,13 @@
         <table class="table table-sm mb-0">
           <thead><tr><th>School</th><th>Allocated</th>{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}<th></th>{% endif %}</tr></thead>
           <tbody>
-            {% for a in sw.allocations %}
+            {% for a in lic.allocations %}
             <tr>
               <td><a href="{{ url_for('schools.view_school', id=a.school_id) }}">{{ a.school.name }}</a></td>
               <td>{{ a.allocated_count }}</td>
               {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
               <td class="text-end">
-                <form method="post" action="{{ url_for('licenses.delete_allocation', id=sw.id, allocation_id=a.id) }}" onsubmit="return confirm('Remove this allocation?');">
+                <form method="post" action="{{ url_for('licenses.delete_allocation', id=lic.id, allocation_id=a.id) }}" onsubmit="return confirm('Remove this allocation?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
                 </form>
@@ -112,7 +111,7 @@
       </div>
       {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
       <div class="card-body border-top">
-        <form method="post" action="{{ url_for('licenses.add_allocation', id=sw.id) }}" class="row g-2 align-items-end">
+        <form method="post" action="{{ url_for('licenses.add_allocation', id=lic.id) }}" class="row g-2 align-items-end">
           {{ allocation_form.hidden_tag() }}
           <div class="col-5">
             {{ allocation_form.school_id.label(class="form-label small mb-1") }}
@@ -126,7 +125,7 @@
             {{ allocation_form.submit(class="btn btn-sm btn-primary w-100") }}
           </div>
         </form>
-        <p class="text-muted small mt-2 mb-0">Total allocated cannot exceed the district license count ({{ sw.license_count }}).</p>
+        <p class="text-muted small mt-2 mb-0">Total allocated cannot exceed the district license count ({{ lic.license_count }}).</p>
       </div>
       {% endif %}
     </div>
@@ -135,23 +134,22 @@
       <div class="card-header d-flex justify-content-between align-items-center">
         <span>Contracts</span>
         {% if current_user.has_role('Administrator', 'IT Administrator') %}
-        <a href="{{ url_for('contracts.add_contract', software_id=sw.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add Contract</a>
+        <a href="{{ url_for('contracts.add_contract', license_id=lic.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add Contract</a>
         {% endif %}
       </div>
       <div class="table-responsive">
         <table class="table table-sm mb-0">
-          <thead><tr><th>Contract #</th><th>License Type</th><th>End Date</th><th>Annual Cost</th>{% if current_user.has_role('Administrator', 'IT Administrator') %}<th></th>{% endif %}</tr></thead>
+          <thead><tr><th>PO Number</th><th>End Date</th><th>Annual Cost</th>{% if current_user.has_role('Administrator', 'IT Administrator') %}<th></th>{% endif %}</tr></thead>
           <tbody>
-            {% for c in sw.contracts %}
+            {% for c in lic.contracts %}
             <tr>
-              <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.contract_number }}</a></td>
-              <td>{{ c.license_type }}</td>
+              <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.po_number or '—' }}</a></td>
               <td>{{ c.end_date | dateformat }}</td>
               <td>{{ c.annual_cost | money }}</td>
               {% if current_user.has_role('Administrator', 'IT Administrator') %}
               <td class="text-end text-nowrap">
-                <a href="{{ url_for('contracts.edit_contract', software_id=sw.id, id=c.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
-                <form method="post" action="{{ url_for('contracts.delete_contract', software_id=sw.id, id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete this contract?');">
+                <a href="{{ url_for('contracts.edit_contract', license_id=lic.id, id=c.id) }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil"></i></a>
+                <form method="post" action="{{ url_for('contracts.delete_contract', license_id=lic.id, id=c.id) }}" class="d-inline" onsubmit="return confirm('Delete this contract?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>
@@ -159,7 +157,7 @@
               {% endif %}
             </tr>
             {% else %}
-            <tr><td colspan="5" class="text-muted text-center py-3">No contracts yet.</td></tr>
+            <tr><td colspan="4" class="text-muted text-center py-3">No contracts yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -173,13 +171,13 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h2 class="modal-title h5" id="deleteModalLabel">Delete {{ sw.name }}?</h2>
+        <h2 class="modal-title h5" id="deleteModalLabel">Delete {{ lic.name }}?</h2>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
-      <div class="modal-body">This will permanently remove {{ sw.name }} and all of its license allocations. This cannot be undone.</div>
+      <div class="modal-body">This will permanently remove {{ lic.name }} and all of its license allocations. This cannot be undone.</div>
       <div class="modal-footer">
         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
-        <form method="post" action="{{ url_for('licenses.delete_software', id=sw.id) }}">
+        <form method="post" action="{{ url_for('licenses.delete_license', id=lic.id) }}">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button type="submit" class="btn btn-danger">Delete</button>
         </form>

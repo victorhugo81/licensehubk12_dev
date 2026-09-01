@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from flask import Blueprint, jsonify, request
 
 from app.extensions import db
-from app.models import LicenseAllocation, Role, School, Software, Vendor
+from app.models import License, LicenseAllocation, Role, School, Vendor
 from app.services.audit import log_action
 from app.services.status import compute_expiration_status, get_thresholds
 from app.utils.api_auth import api_login_required, api_permission_required, api_user
@@ -11,18 +11,18 @@ from app.utils.api_auth import api_login_required, api_permission_required, api_
 api_bp = Blueprint("api", __name__, url_prefix="/api")
 
 
-def _software_to_dict(s):
+def _license_to_dict(lic):
     thresholds = get_thresholds()
     return {
-        "id": s.id, "name": s.name, "vendor": s.vendor.name if s.vendor else None,
-        "category": s.category.name if s.category else None, "license_type": s.license_type,
-        "license_count": s.license_count, "assigned_licenses": s.assigned_licenses,
-        "available_licenses": s.available_licenses, "utilization_pct": s.utilization_pct,
-        "start_date": s.start_date.isoformat() if s.start_date else None,
-        "expiration_date": s.expiration_date.isoformat() if s.expiration_date else None,
-        "renewal_date": s.renewal_date.isoformat() if s.renewal_date else None,
-        "annual_cost": float(s.annual_cost or 0), "cost_per_license": s.cost_per_license,
-        "status": s.status, "computed_status": compute_expiration_status(s.expiration_date, thresholds),
+        "id": lic.id, "name": lic.name, "vendor": lic.vendor.name if lic.vendor else None,
+        "category": lic.category.name if lic.category else None,
+        "license_count": lic.license_count, "assigned_licenses": lic.assigned_licenses,
+        "available_licenses": lic.available_licenses, "utilization_pct": lic.utilization_pct,
+        "start_date": lic.start_date.isoformat() if lic.start_date else None,
+        "expiration_date": lic.expiration_date.isoformat() if lic.expiration_date else None,
+        "renewal_date": lic.renewal_date.isoformat() if lic.renewal_date else None,
+        "annual_cost": float(lic.annual_cost or 0), "cost_per_license": lic.cost_per_license,
+        "status": lic.status, "computed_status": compute_expiration_status(lic.expiration_date, thresholds),
     }
 
 
@@ -41,89 +41,82 @@ def _school_to_dict(sc):
     }
 
 
-def _visible_software_query():
+def _visible_license_query():
     user = api_user()
-    query = Software.query
+    query = License.query
     if user.has_role(Role.SCHOOL_ADMINISTRATOR):
         query = query.join(LicenseAllocation).filter(LicenseAllocation.school_id == user.school_id).distinct()
     return query
-
-
-@api_bp.route("/software", methods=["GET"])
-@api_login_required
-@api_permission_required("view_reports")
-def list_software():
-    items = _visible_software_query().order_by(Software.name).all()
-    return jsonify([_software_to_dict(s) for s in items])
 
 
 @api_bp.route("/licenses", methods=["GET"])
 @api_login_required
 @api_permission_required("view_reports")
 def list_licenses():
-    return list_software()
+    items = _visible_license_query().order_by(License.name).all()
+    return jsonify([_license_to_dict(lic) for lic in items])
 
 
-@api_bp.route("/software/<int:id>", methods=["GET"])
+@api_bp.route("/licenses/<int:id>", methods=["GET"])
 @api_login_required
 @api_permission_required("view_reports")
-def get_software(id):
-    s = _visible_software_query().filter(Software.id == id).first()
-    if s is None:
+def get_license(id):
+    lic = _visible_license_query().filter(License.id == id).first()
+    if lic is None:
         return jsonify(error="Not found."), 404
-    return jsonify(_software_to_dict(s))
+    return jsonify(_license_to_dict(lic))
 
 
-@api_bp.route("/software", methods=["POST"])
+@api_bp.route("/licenses", methods=["POST"])
 @api_login_required
-@api_permission_required("manage_software")
-def create_software():
+@api_permission_required("manage_licenses")
+def create_license():
     data = request.get_json(silent=True) or {}
     if not data.get("name") or not data.get("vendor_id"):
         return jsonify(error="'name' and 'vendor_id' are required."), 400
     if not db.session.get(Vendor, data["vendor_id"]):
         return jsonify(error="Unknown vendor_id."), 400
 
-    s = Software(
+    lic = License(
         name=data["name"], vendor_id=data["vendor_id"],
         license_count=data.get("license_count", 0),
         status=data.get("status", "Active"),
         created_by_id=api_user().id,
     )
     if data.get("expiration_date"):
-        s.expiration_date = date.fromisoformat(data["expiration_date"])
-    db.session.add(s)
+        lic.expiration_date = date.fromisoformat(data["expiration_date"])
+    db.session.add(lic)
     db.session.commit()
-    log_action("create", "software", s.id, {"name": s.name, "via": "api"})
+    log_action("create", "license", lic.id, {"name": lic.name, "via": "api"})
     db.session.commit()
-    return jsonify(_software_to_dict(s)), 201
+    return jsonify(_license_to_dict(lic)), 201
 
 
-@api_bp.route("/software/<int:id>", methods=["PUT"])
+@api_bp.route("/licenses/<int:id>", methods=["PUT"])
 @api_login_required
-@api_permission_required("manage_software")
-def update_software(id):
-    s = Software.query.get_or_404(id)
+@api_permission_required("manage_licenses")
+def update_license(id):
+    lic = License.query.get_or_404(id)
     data = request.get_json(silent=True) or {}
     for field in ("name", "license_count", "status", "vendor_id"):
         if field in data:
-            setattr(s, field, data[field])
+            setattr(lic, field, data[field])
     if "expiration_date" in data:
-        s.expiration_date = date.fromisoformat(data["expiration_date"]) if data["expiration_date"] else None
+        lic.expiration_date = date.fromisoformat(data["expiration_date"]) if data["expiration_date"] else None
     db.session.commit()
-    log_action("update", "software", s.id, {"via": "api"})
+    log_action("update", "license", lic.id, {"via": "api"})
     db.session.commit()
-    return jsonify(_software_to_dict(s))
+    return jsonify(_license_to_dict(lic))
 
 
-@api_bp.route("/software/<int:id>", methods=["DELETE"])
+@api_bp.route("/licenses/<int:id>", methods=["DELETE"])
 @api_login_required
-@api_permission_required("manage_software")
-def delete_software(id):
-    s = Software.query.get_or_404(id)
-    name = s.name
-    db.session.delete(s)
-    log_action("delete", "software", id, {"name": name, "via": "api"})
+@api_permission_required("manage_licenses")
+def delete_license(id):
+    lic = License.query.get_or_404(id)
+    name = lic.name
+    db.session.delete(lic)
+    log_action("delete", "license", id, {"name": name, "via": "api"})
     db.session.commit()
     return jsonify(message=f"{name} deleted."), 200
 
@@ -153,8 +146,8 @@ def expiring():
     days = request.args.get("days", 90, type=int)
     cutoff = date.today() + timedelta(days=days)
     items = [
-        s for s in _visible_software_query().all()
-        if s.expiration_date and date.today() <= s.expiration_date <= cutoff
+        lic for lic in _visible_license_query().all()
+        if lic.expiration_date and date.today() <= lic.expiration_date <= cutoff
     ]
-    items.sort(key=lambda s: s.expiration_date)
-    return jsonify([_software_to_dict(s) for s in items])
+    items.sort(key=lambda lic: lic.expiration_date)
+    return jsonify([_license_to_dict(lic) for lic in items])

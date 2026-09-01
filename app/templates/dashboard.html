@@ -10,8 +10,8 @@
   <div class="col-6 col-lg">
     <div class="stat-tile">
       <div class="stat-icon mb-2" style="background: var(--status-info-bg); color: var(--status-info);"><i class="bi bi-collection"></i></div>
-      <div class="stat-value">{{ total_software }}</div>
-      <div class="stat-label">Total Software</div>
+      <div class="stat-value">{{ total_licenses }}</div>
+      <div class="stat-label">Total Licenses</div>
     </div>
   </div>
   <div class="col-6 col-lg">
@@ -72,14 +72,14 @@
     <div class="card h-100">
       <div class="card-header">License Utilization</div>
       <div class="card-body">
-        {% for sw in utilization %}
+        {% for lic in utilization %}
           <div class="mb-3">
             <div class="d-flex justify-content-between small mb-1">
-              <a href="{{ url_for('licenses.utilization', id=sw.id) }}">{{ sw.name }}</a>
-              <span class="text-muted">{{ sw.assigned_licenses }} / {{ sw.license_count }} ({{ sw.utilization_pct }}%)</span>
+              <a href="{{ url_for('licenses.utilization', id=lic.id) }}">{{ lic.name }}</a>
+              <span class="text-muted">{{ lic.assigned_licenses }} / {{ lic.license_count }} ({{ lic.utilization_pct }}%)</span>
             </div>
-            <div class="progress" role="progressbar" aria-valuenow="{{ sw.utilization_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ sw.name }} utilization">
-              <div class="progress-bar {{ 'progress-bar-critical' if sw.utilization_pct >= 100 else 'progress-bar-warning' if sw.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ sw.utilization_pct }}%"></div>
+            <div class="progress" role="progressbar" aria-valuenow="{{ lic.utilization_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ lic.name }} utilization">
+              <div class="progress-bar {{ 'progress-bar-critical' if lic.utilization_pct >= 100 else 'progress-bar-warning' if lic.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ lic.utilization_pct }}%"></div>
             </div>
           </div>
         {% else %}
@@ -103,11 +103,11 @@
       </div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>Software</th><th>Vendor</th><th>Expiration</th><th>Licenses</th></tr></thead>
+          <thead><tr><th>License</th><th>Vendor</th><th>Expiration</th><th>Licenses</th></tr></thead>
           <tbody>
             {% for sw in expiring %}
             <tr>
-              <td><a href="{{ url_for('licenses.view_software', id=sw.id) }}">{{ sw.name }}</a></td>
+              <td><a href="{{ url_for('licenses.view_license', id=sw.id) }}">{{ sw.name }}</a></td>
               <td>{{ sw.vendor.name }}</td>
               <td>{{ sw.expiration_date | dateformat }}</td>
               <td>{{ sw.license_count }}</td>

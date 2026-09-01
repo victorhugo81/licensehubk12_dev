@@ -59,5 +59,5 @@ def test_api_bearer_token_not_accepted_as_query_param(csrf_app):
         token = user.api_key
     # Passing the token as a query string must not authenticate - only the
     # Authorization header is honored.
-    resp = client.get(f"/api/software?api_key={token}")
+    resp = client.get(f"/api/licenses?api_key={token}")
     assert resp.status_code == 401

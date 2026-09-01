@@ -8,10 +8,10 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Vendor</th><th># Software</th><th>Total Annual Spend</th></tr></thead>
+      <thead><tr><th>Vendor</th><th># Licenses</th><th>Total Annual Spend</th></tr></thead>
       <tbody>
         {% for v in vendors %}
-        <tr><td>{{ v.name }}</td><td>{{ v.software | length }}</td><td>{{ v.total_annual_spend | money }}</td></tr>
+        <tr><td>{{ v.name }}</td><td>{{ v.licenses | length }}</td><td>{{ v.total_annual_spend | money }}</td></tr>
         {% else %}
         <tr><td colspan="3" class="text-muted text-center py-4">No vendor spending yet.</td></tr>
         {% endfor %}

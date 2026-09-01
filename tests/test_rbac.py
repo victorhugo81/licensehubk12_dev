@@ -5,7 +5,7 @@ from tests.conftest import login, make_user
 
 
 @pytest.mark.parametrize("path", [
-    "/software/add",
+    "/licenses/add",
     "/vendors/add",
     "/schools/add",
     "/administration/users/",
@@ -18,17 +18,17 @@ def test_viewer_cannot_access_write_or_admin_routes(client, viewer_user, path):
     assert resp.status_code == 403
 
 
-def test_viewer_cannot_add_contract(client, viewer_user, software):
+def test_viewer_cannot_add_contract(client, viewer_user, license_):
     login(client, "viewer@example.com")
-    resp = client.get(f"/software/{software.id}/contracts/add")
+    resp = client.get(f"/licenses/{license_.id}/contracts/add")
     assert resp.status_code == 403
 
 
-def test_viewer_can_access_read_routes(client, viewer_user, software):
+def test_viewer_can_access_read_routes(client, viewer_user, license_):
     login(client, "viewer@example.com")
     assert client.get("/").status_code == 200
-    assert client.get("/software").status_code == 200
-    assert client.get(f"/software/{software.id}").status_code == 200
+    assert client.get("/licenses").status_code == 200
+    assert client.get(f"/licenses/{license_.id}").status_code == 200
     assert client.get("/reports/").status_code == 200
 
 
@@ -40,28 +40,28 @@ def test_it_administrator_can_manage_vendors_but_not_users(client, db):
     assert client.get("/administration/settings/").status_code == 403
 
 
-def test_curriculum_administrator_can_manage_software_not_vendors(client, db):
+def test_curriculum_administrator_can_manage_licenses_not_vendors(client, db):
     make_user(db, "curriculum@example.com", Role.CURRICULUM_ADMINISTRATOR)
     login(client, "curriculum@example.com")
-    assert client.get("/software/add").status_code == 200
+    assert client.get("/licenses/add").status_code == 200
     assert client.get("/vendors/add").status_code == 403
     assert client.get("/schools/add").status_code == 403
 
 
-def test_school_administrator_cannot_view_other_schools_software(client, db, software, school_admin_user):
+def test_school_administrator_cannot_view_other_schools_licenses(client, db, license_, school_admin_user):
     login(client, "schooladmin@example.com")
-    # `software` fixture has no allocation to school_admin_user's school
-    resp = client.get(f"/software/{software.id}")
+    # `license_` fixture has no allocation to school_admin_user's school
+    resp = client.get(f"/licenses/{license_.id}")
     assert resp.status_code == 403
 
 
-def test_school_administrator_can_view_own_schools_allocated_software(client, db, software, school_admin_user):
+def test_school_administrator_can_view_own_schools_allocated_licenses(client, db, license_, school_admin_user):
     from app.services import allocation as allocation_service
-    allocation_service.set_allocation(software, school_admin_user.school, 10)
+    allocation_service.set_allocation(license_, school_admin_user.school, 10)
     db.session.commit()
 
     login(client, "schooladmin@example.com")
-    resp = client.get(f"/software/{software.id}")
+    resp = client.get(f"/licenses/{license_.id}")
     assert resp.status_code == 200
 
 

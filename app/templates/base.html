@@ -26,15 +26,15 @@
           </a>
         </li>
 
-        <div class="nav-section-label">Software &amp; Licenses</div>
+        <div class="nav-section-label">Licenses</div>
         <li class="nav-item">
-          <a class="nav-link {{ 'active' if request.endpoint == 'licenses.list_software' and not request.args.get('view') }}" href="{{ url_for('licenses.list_software') }}">
-            <i class="bi bi-collection"></i> All Software
+          <a class="nav-link {{ 'active' if request.endpoint == 'licenses.list_licenses' and not request.args.get('view') }}" href="{{ url_for('licenses.list_licenses') }}">
+            <i class="bi bi-collection"></i> All Licenses
           </a>
         </li>
         {% if current_user.is_authenticated and current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.add_software') }}"><i class="bi bi-plus-circle"></i> Add Software</a>
+          <a class="nav-link" href="{{ url_for('licenses.add_license') }}"><i class="bi bi-plus-circle"></i> Add License</a>
         </li>
         <li class="nav-item">
           <a class="nav-link" href="{{ url_for('licenses.categories') }}"><i class="bi bi-tags"></i> Categories</a>
@@ -44,13 +44,13 @@
         </li>
         {% endif %}
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_software', view='active') }}"><i class="bi bi-check-circle"></i> Active Licenses</a>
+          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='active') }}"><i class="bi bi-check-circle"></i> Active Licenses</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_software', view='expiring') }}"><i class="bi bi-hourglass-split"></i> Expiring Licenses</a>
+          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='expiring') }}"><i class="bi bi-hourglass-split"></i> Expiring Licenses</a>
         </li>
         <li class="nav-item">
-          <a class="nav-link" href="{{ url_for('licenses.list_software', view='expired') }}"><i class="bi bi-x-octagon"></i> Expired Licenses</a>
+          <a class="nav-link" href="{{ url_for('licenses.list_licenses', view='expired') }}"><i class="bi bi-x-octagon"></i> Expired Licenses</a>
         </li>
 
         <div class="nav-section-label">District</div>
@@ -59,6 +59,9 @@
         </li>
         <li class="nav-item">
           <a class="nav-link {{ 'active' if 'vendors.' in request.endpoint }}" href="{{ url_for('vendors.list_vendors') }}"><i class="bi bi-shop"></i> Vendors</a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {{ 'active' if 'contracts.' in request.endpoint }}" href="{{ url_for('contracts.list_contracts') }}"><i class="bi bi-file-earmark-text"></i> Contracts</a>
         </li>
         <li class="nav-item">
           <a class="nav-link {{ 'active' if 'reports.' in request.endpoint }}" href="{{ url_for('reports.index') }}"><i class="bi bi-bar-chart-line"></i> Reports</a>
@@ -95,9 +98,9 @@
         <button class="btn btn-outline-secondary d-lg-none" id="sidebarToggle" type="button" aria-label="Toggle navigation menu" aria-expanded="false" aria-controls="appSidebar">
           <i class="bi bi-list"></i>
         </button>
-        <form class="d-none d-md-block" role="search" method="get" action="{{ url_for('licenses.list_software') }}">
-          <label for="globalSearch" class="visually-hidden">Search software</label>
-          <input type="search" id="globalSearch" name="q" class="form-control" placeholder="Search software…" style="width: 260px;">
+        <form class="d-none d-md-block" role="search" method="get" action="{{ url_for('licenses.list_licenses') }}">
+          <label for="globalSearch" class="visually-hidden">Search licenses</label>
+          <input type="search" id="globalSearch" name="q" class="form-control" placeholder="Search licenses…" style="width: 260px;">
         </form>
       </div>
       <div class="d-flex align-items-center gap-3">

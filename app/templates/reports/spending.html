@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}Software Spending - LicenseHubK12{% endblock %}
+{% block title %}License Spending - LicenseHubK12{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">Software Spending</h1>
+  <h1 class="h4 mb-0">License Spending</h1>
   {% include "includes/export_buttons.html" %}
 </div>
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Vendor</th><th>Software</th><th>Annual Cost</th><th># Licenses</th><th>Cost Per License</th></tr></thead>
+      <thead><tr><th>Vendor</th><th>License</th><th>Annual Cost</th><th># Licenses</th><th>Cost Per License</th></tr></thead>
       <tbody>
-        {% for s in software_list %}
+        {% for lic in license_list %}
         <tr>
-          <td>{{ s.vendor.name }}</td><td>{{ s.name }}</td><td>{{ s.annual_cost | money }}</td>
-          <td>{{ s.license_count }}</td><td>{{ s.cost_per_license | money }}</td>
+          <td>{{ lic.vendor.name }}</td><td>{{ lic.name }}</td><td>{{ lic.annual_cost | money }}</td>
+          <td>{{ lic.license_count }}</td><td>{{ lic.cost_per_license | money }}</td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="text-muted text-center py-4">No spending data yet.</td></tr>

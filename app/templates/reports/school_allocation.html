@@ -10,10 +10,10 @@
   <div class="card-header">{{ school.name }}</div>
   <div class="table-responsive">
     <table class="table table-sm mb-0">
-      <thead><tr><th>Software</th><th>Allocated Licenses</th></tr></thead>
+      <thead><tr><th>License</th><th>Allocated Licenses</th></tr></thead>
       <tbody>
         {% for a in school.allocations %}
-        <tr><td>{{ a.software.name }}</td><td>{{ a.allocated_count }}</td></tr>
+        <tr><td>{{ a.license.name }}</td><td>{{ a.allocated_count }}</td></tr>
         {% else %}
         <tr><td colspan="2" class="text-muted text-center py-3">No allocations for this school.</td></tr>
         {% endfor %}

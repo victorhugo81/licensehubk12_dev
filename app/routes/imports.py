@@ -12,7 +12,7 @@ from app.models import ImportHistory
 from app.services.audit import log_action
 from app.utils.decorators import permission_required
 
-imports_bp = Blueprint("imports", __name__, url_prefix="/software/import")
+imports_bp = Blueprint("imports", __name__, url_prefix="/licenses/import")
 
 
 def _temp_path(token):
@@ -82,17 +82,17 @@ def commit():
     )
     history.details = {"created": created, "updated": updated, "allocation_errors": allocation_errors}
     db.session.add(history)
-    log_action("import", "software", None, {"filename": filename, "created": created, "updated": updated})
+    log_action("import", "license", None, {"filename": filename, "created": created, "updated": updated})
     db.session.commit()
 
     os.remove(temp_path)
     session.pop("import_token", None)
     session.pop("import_filename", None)
 
-    flash(f"Import complete: {created} software created, {updated} updated.", "success")
+    flash(f"Import complete: {created} license(s) created, {updated} updated.", "success")
     if allocation_errors:
         flash(f"{len(allocation_errors)} row(s) could not be allocated - see import history for details.", "warning")
-    return redirect(url_for("licenses.list_software"))
+    return redirect(url_for("licenses.list_licenses"))
 
 
 @imports_bp.route("/cancel", methods=["POST"])

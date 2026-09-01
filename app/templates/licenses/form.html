@@ -1,8 +1,8 @@
 {% extends "base.html" %}
 {% from "includes/macros.html" import field %}
-{% block title %}{{ 'Edit' if sw else 'Add' }} Software - LicenseHubK12{% endblock %}
+{% block title %}{{ 'Edit' if lic else 'Add' }} License - LicenseHubK12{% endblock %}
 {% block content %}
-<h1 class="h4 mb-3">{{ 'Edit' if sw else 'Add' }} Software</h1>
+<h1 class="h4 mb-3">{{ 'Edit' if lic else 'Add' }} License</h1>
 <div class="card">
   <div class="card-body">
     <form method="post" novalidate>
@@ -22,10 +22,10 @@
         {{ field(form.description, "col-12") }}
         {{ field(form.notes, "col-12") }}
       </div>
-      <p class="text-muted small mb-3">License type, annual cost, contract number and vendor contact are set per-contract{% if sw %} - see Contracts below{% else %}, once this software has been created{% endif %}.</p>
+      <p class="text-muted small mb-3">Annual cost, contract number and vendor contact are set per-contract{% if lic %} - see Contracts below{% else %}, once this license has been created{% endif %}.</p>
       <div class="d-flex gap-2">
         {{ form.submit(class="btn btn-primary") }}
-        <a href="{{ url_for('licenses.list_software') }}" class="btn btn-outline-secondary">Cancel</a>
+        <a href="{{ url_for('licenses.list_licenses') }}" class="btn btn-outline-secondary">Cancel</a>
       </div>
     </form>
   </div>

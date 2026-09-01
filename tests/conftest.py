@@ -2,7 +2,7 @@ import pytest
 
 from app import create_app
 from app.extensions import db as _db
-from app.models import Category, LicenseAllocation, Role, School, Software, Vendor
+from app.models import Category, License, LicenseAllocation, Role, School, Vendor
 
 
 @pytest.fixture()
@@ -70,11 +70,11 @@ def vendor(db):
 
 
 @pytest.fixture()
-def software(db, vendor):
-    s = Software(name="TestSoft", vendor=vendor, license_count=100, status="Active")
-    db.session.add(s)
+def license_(db, vendor):
+    lic = License(name="TestSoft", vendor=vendor, license_count=100, status="Active")
+    db.session.add(lic)
     db.session.commit()
-    return s
+    return lic
 
 
 def login(client, email, password="Password123!"):

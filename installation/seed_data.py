@@ -5,7 +5,7 @@
 # thresholds, and one Administrator user - the minimum needed to log in
 # and start configuring a real district.
 #
-# For fictional demo data (sample vendors, software, schools, allocations,
+# For fictional demo data (sample vendors, licenses, schools, allocations,
 # contracts) use `uv run flask seed` instead (see app/seed.py) - that
 # command is meant for local development and demos, not production.
 #

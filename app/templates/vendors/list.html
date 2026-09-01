@@ -20,14 +20,14 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Vendor</th><th>Support Email</th><th>Account Manager</th><th># Software</th><th>Annual Spend</th></tr></thead>
+      <thead><tr><th>Vendor</th><th>Support Email</th><th>Account Manager</th><th># Licenses</th><th>Annual Spend</th></tr></thead>
       <tbody>
         {% for v in vendors %}
         <tr>
           <td><a href="{{ url_for('vendors.view_vendor', id=v.id) }}">{{ v.name }}</a></td>
           <td>{{ v.support_email or '—' }}</td>
           <td>{{ v.account_manager or '—' }}</td>
-          <td>{{ v.software | length }}</td>
+          <td>{{ v.licenses | length }}</td>
           <td>{{ v.total_annual_spend | money }}</td>
         </tr>
         {% else %}

@@ -20,12 +20,12 @@
 <div class="card mb-3">
   <div class="table-responsive">
     <table class="table table-sm table-hover mb-0">
-      <thead><tr><th>Row</th><th>Software</th><th>Vendor</th><th>School</th><th>Total</th><th>Assigned</th><th>Expiration</th><th>Status</th><th>Messages</th></tr></thead>
+      <thead><tr><th>Row</th><th>License</th><th>Vendor</th><th>School</th><th>Total</th><th>Assigned</th><th>Expiration</th><th>Status</th><th>Messages</th></tr></thead>
       <tbody>
         {% for r in preview.rows %}
         <tr class="{{ 'table-danger' if r.status == 'error' else 'table-warning' if r.status == 'warning' else '' }}">
           <td>{{ r.row_number }}</td>
-          <td>{{ r.data.software }}</td>
+          <td>{{ r.data.license }}</td>
           <td>{{ r.data.vendor }}</td>
           <td>{{ r.data.school }}</td>
           <td>{{ r.data.total_licenses }}</td>

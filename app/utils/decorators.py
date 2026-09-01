@@ -6,10 +6,10 @@ start rather than retrofitted, because bolting authorization onto existing
 routes later means auditing every single one for gaps.
 
 Usage:
-    @bp.route("/software/<int:id>/edit")
+    @bp.route("/licenses/<int:id>/edit")
     @login_required
-    @permission_required("manage_software")
-    def edit_software(id): ...
+    @permission_required("manage_licenses")
+    def edit_license(id): ...
 """
 from functools import wraps
 
@@ -24,7 +24,6 @@ PERMISSIONS = {
     "manage_users": {Role.ADMINISTRATOR},
     "manage_settings": {Role.ADMINISTRATOR},
     "view_audit_log": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR},
-    "manage_software": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.CURRICULUM_ADMINISTRATOR},
     "manage_licenses": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.CURRICULUM_ADMINISTRATOR},
     "manage_vendors": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR},
     "manage_schools": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR},

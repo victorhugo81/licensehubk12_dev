@@ -58,15 +58,15 @@ def view_vendor(id):
     vendor = Vendor.query.get_or_404(id)
     thresholds = get_thresholds()
     upcoming_contracts = [c for c in vendor.contracts if c.end_date >= date.today()]
-    expiring_software = [
-        s for s in vendor.software
-        if s.expiration_date and compute_expiration_status(s.expiration_date, thresholds) != "active"
+    expiring_licenses = [
+        lic for lic in vendor.licenses
+        if lic.expiration_date and compute_expiration_status(lic.expiration_date, thresholds) != "active"
     ]
     return render_template(
         "vendors/detail.html",
         vendor=vendor,
         upcoming_contracts=upcoming_contracts,
-        expiring_software=expiring_software,
+        expiring_licenses=expiring_licenses,
         thresholds=thresholds,
         compute_expiration_status=compute_expiration_status,
     )
@@ -95,8 +95,8 @@ def edit_vendor(id):
 @permission_required("manage_vendors")
 def delete_vendor(id):
     vendor = Vendor.query.get_or_404(id)
-    if vendor.software:
-        flash(f"Cannot delete {vendor.name} while software is linked to it.", "danger")
+    if vendor.licenses:
+        flash(f"Cannot delete {vendor.name} while licenses are linked to it.", "danger")
         return redirect(url_for("vendors.view_vendor", id=id))
     name = vendor.name
     db.session.delete(vendor)

@@ -1,9 +1,9 @@
 """License-to-school allocation rules.
 
 Central enforcement point for the invariant that total school allocations
-for a piece of software can never exceed its district license count. This
-lives at the service layer (not just in WTForms validators) so the API and
-CSV import paths get the same guarantee as the web form.
+for a license can never exceed its district license count. This lives at
+the service layer (not just in WTForms validators) so the API and CSV
+import paths get the same guarantee as the web form.
 """
 from app.extensions import db
 from app.models import LicenseAllocation
@@ -13,33 +13,33 @@ class AllocationError(ValueError):
     pass
 
 
-def total_allocated(software, exclude_allocation_id=None):
+def total_allocated(license_, exclude_allocation_id=None):
     total = 0
-    for allocation in software.allocations:
+    for allocation in license_.allocations:
         if exclude_allocation_id and allocation.id == exclude_allocation_id:
             continue
         total += allocation.allocated_count or 0
     return total
 
 
-def set_allocation(software, school, count, notes=None):
-    """Create or update the allocation of `software` to `school`.
+def set_allocation(license_, school, count, notes=None):
+    """Create or update the allocation of `license_` to `school`.
 
     Raises AllocationError if the requested count would push the sum of all
-    allocations for this software above its total license_count.
+    allocations for this license above its total license_count.
     """
     if count < 0:
         raise AllocationError("Allocated count cannot be negative.")
 
-    existing = LicenseAllocation.query.filter_by(software_id=software.id, school_id=school.id).first()
+    existing = LicenseAllocation.query.filter_by(license_id=license_.id, school_id=school.id).first()
     exclude_id = existing.id if existing else None
 
-    other_total = total_allocated(software, exclude_allocation_id=exclude_id)
-    if other_total + count > software.license_count:
-        remaining = max(software.license_count - other_total, 0)
+    other_total = total_allocated(license_, exclude_allocation_id=exclude_id)
+    if other_total + count > license_.license_count:
+        remaining = max(license_.license_count - other_total, 0)
         raise AllocationError(
             f"Allocation of {count} exceeds the district license count for "
-            f"{software.name}. Only {remaining} license(s) remain unallocated."
+            f"{license_.name}. Only {remaining} license(s) remain unallocated."
         )
 
     if existing:
@@ -48,15 +48,15 @@ def set_allocation(software, school, count, notes=None):
         allocation = existing
     else:
         allocation = LicenseAllocation(
-            software_id=software.id, school_id=school.id, allocated_count=count, notes=notes
+            license_id=license_.id, school_id=school.id, allocated_count=count, notes=notes
         )
         db.session.add(allocation)
 
     return allocation
 
 
-def remove_allocation(software, school):
-    existing = LicenseAllocation.query.filter_by(software_id=software.id, school_id=school.id).first()
+def remove_allocation(license_, school):
+    existing = LicenseAllocation.query.filter_by(license_id=license_.id, school_id=school.id).first()
     if existing:
         db.session.delete(existing)
     return existing

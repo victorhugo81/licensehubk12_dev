@@ -13,12 +13,12 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Software</th><th>Vendor</th><th>Expiration Date</th><th>Days Remaining</th><th>Total Licenses</th></tr></thead>
+      <thead><tr><th>License</th><th>Vendor</th><th>Expiration Date</th><th>Days Remaining</th><th>Total Licenses</th></tr></thead>
       <tbody>
-        {% for s in software_list %}
+        {% for lic in license_list %}
         <tr>
-          <td>{{ s.name }}</td><td>{{ s.vendor.name }}</td><td>{{ s.expiration_date | dateformat }}</td>
-          <td>{{ s.days_until_expiration }}</td><td>{{ s.license_count }}</td>
+          <td>{{ lic.name }}</td><td>{{ lic.vendor.name }}</td><td>{{ lic.expiration_date | dateformat }}</td>
+          <td>{{ lic.days_until_expiration }}</td><td>{{ lic.license_count }}</td>
         </tr>
         {% else %}
         <tr><td colspan="5" class="text-muted text-center py-4">Nothing expiring in this window.</td></tr>

@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from flask import Blueprint, render_template, request
 from flask_login import current_user, login_required
 
-from app.models import Contract, LicenseAllocation, Role, School, Software, Vendor
+from app.models import Contract, License, LicenseAllocation, Role, School, Vendor
 from app.services.status import compute_expiration_status, get_thresholds
 from app.utils.decorators import permission_required
 from app.utils.exports import export
@@ -11,8 +11,8 @@ from app.utils.exports import export
 reports_bp = Blueprint("reports", __name__, url_prefix="/reports")
 
 
-def _visible_software():
-    query = Software.query
+def _visible_licenses():
+    query = License.query
     if current_user.has_role(Role.SCHOOL_ADMINISTRATOR):
         query = query.join(LicenseAllocation).filter(LicenseAllocation.school_id == current_user.school_id).distinct()
     return query.all()
@@ -29,18 +29,18 @@ def index():
 @login_required
 @permission_required("view_reports")
 def inventory():
-    software_list = _visible_software()
+    license_list = _visible_licenses()
     fmt = request.args.get("format")
-    headers = ["Software", "Vendor", "Category", "License Type", "Total", "Assigned", "Available", "Status", "Expiration Date", "Annual Cost"]
+    headers = ["License", "Vendor", "Category", "Total", "Assigned", "Available", "Status", "Expiration Date", "Annual Cost"]
     rows = [
-        [s.name, s.vendor.name, s.category.name if s.category else "", s.license_type,
-         s.license_count, s.assigned_licenses, s.available_licenses, s.status,
-         s.expiration_date.isoformat() if s.expiration_date else "", float(s.annual_cost or 0)]
-        for s in software_list
+        [lic.name, lic.vendor.name, lic.category.name if lic.category else "",
+         lic.license_count, lic.assigned_licenses, lic.available_licenses, lic.status,
+         lic.expiration_date.isoformat() if lic.expiration_date else "", float(lic.annual_cost or 0)]
+        for lic in license_list
     ]
     if fmt:
         return export(fmt, "license_inventory", "License Inventory", headers, rows)
-    return render_template("reports/inventory.html", software_list=software_list)
+    return render_template("reports/inventory.html", license_list=license_list)
 
 
 @reports_bp.route("/expiring")
@@ -51,49 +51,49 @@ def expiring():
     if days not in (30, 60, 90):
         days = 90
     cutoff = date.today() + timedelta(days=days)
-    software_list = [
-        s for s in _visible_software()
-        if s.expiration_date and date.today() <= s.expiration_date <= cutoff
+    license_list = [
+        lic for lic in _visible_licenses()
+        if lic.expiration_date and date.today() <= lic.expiration_date <= cutoff
     ]
-    software_list.sort(key=lambda s: s.expiration_date)
+    license_list.sort(key=lambda lic: lic.expiration_date)
 
     fmt = request.args.get("format")
-    headers = ["Software", "Vendor", "Expiration Date", "Days Remaining", "Total Licenses"]
+    headers = ["License", "Vendor", "Expiration Date", "Days Remaining", "Total Licenses"]
     rows = [
-        [s.name, s.vendor.name, s.expiration_date.isoformat(), s.days_until_expiration, s.license_count]
-        for s in software_list
+        [lic.name, lic.vendor.name, lic.expiration_date.isoformat(), lic.days_until_expiration, lic.license_count]
+        for lic in license_list
     ]
     if fmt:
         return export(fmt, f"expiring_licenses_{days}d", f"Expiring Licenses (next {days} days)", headers, rows)
-    return render_template("reports/expiring.html", software_list=software_list, days=days)
+    return render_template("reports/expiring.html", license_list=license_list, days=days)
 
 
 @reports_bp.route("/utilization")
 @login_required
 @permission_required("view_reports")
 def utilization():
-    software_list = [s for s in _visible_software() if s.license_count]
-    software_list.sort(key=lambda s: s.utilization_pct, reverse=True)
+    license_list = [lic for lic in _visible_licenses() if lic.license_count]
+    license_list.sort(key=lambda lic: lic.utilization_pct, reverse=True)
 
     fmt = request.args.get("format")
-    headers = ["Software", "Total Licenses", "Assigned", "Available", "Utilization %"]
-    rows = [[s.name, s.license_count, s.assigned_licenses, s.available_licenses, s.utilization_pct] for s in software_list]
+    headers = ["License", "Total Licenses", "Assigned", "Available", "Utilization %"]
+    rows = [[lic.name, lic.license_count, lic.assigned_licenses, lic.available_licenses, lic.utilization_pct] for lic in license_list]
     if fmt:
         return export(fmt, "license_utilization", "License Utilization", headers, rows)
-    return render_template("reports/utilization.html", software_list=software_list)
+    return render_template("reports/utilization.html", license_list=license_list)
 
 
 @reports_bp.route("/spending")
 @login_required
 @permission_required("view_reports")
 def spending():
-    software_list = _visible_software()
+    license_list = _visible_licenses()
     fmt = request.args.get("format")
-    headers = ["Vendor", "Software", "Annual Cost", "Total Licenses", "Cost Per License"]
-    rows = [[s.vendor.name, s.name, float(s.annual_cost or 0), s.license_count, s.cost_per_license] for s in software_list]
+    headers = ["Vendor", "License", "Annual Cost", "Total Licenses", "Cost Per License"]
+    rows = [[lic.vendor.name, lic.name, float(lic.annual_cost or 0), lic.license_count, lic.cost_per_license] for lic in license_list]
     if fmt:
-        return export(fmt, "software_spending", "Software Spending", headers, rows)
-    return render_template("reports/spending.html", software_list=software_list)
+        return export(fmt, "license_spending", "License Spending", headers, rows)
+    return render_template("reports/spending.html", license_list=license_list)
 
 
 @reports_bp.route("/school-allocation")
@@ -106,8 +106,8 @@ def school_allocation():
     schools = query.order_by(School.name).all()
 
     fmt = request.args.get("format")
-    headers = ["School", "Software", "Allocated Licenses"]
-    rows = [[a.school.name, a.software.name, a.allocated_count] for s in schools for a in s.allocations]
+    headers = ["School", "License", "Allocated Licenses"]
+    rows = [[a.school.name, a.license.name, a.allocated_count] for s in schools for a in s.allocations]
     if fmt:
         return export(fmt, "school_allocation", "School Allocation", headers, rows)
     return render_template("reports/school_allocation.html", schools=schools)
@@ -119,8 +119,8 @@ def school_allocation():
 def vendor_spending():
     vendors = Vendor.query.order_by(Vendor.name).all()
     fmt = request.args.get("format")
-    headers = ["Vendor", "Software Count", "Total Annual Spend"]
-    rows = [[v.name, len(v.software), float(v.total_annual_spend)] for v in vendors]
+    headers = ["Vendor", "License Count", "Total Annual Spend"]
+    rows = [[v.name, len(v.licenses), float(v.total_annual_spend)] for v in vendors]
     if fmt:
         return export(fmt, "vendor_spending", "Vendor Spending", headers, rows)
     return render_template("reports/vendor_spending.html", vendors=vendors)

@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}{{ sw.name }} Utilization - LicenseHubK12{% endblock %}
+{% block title %}{{ lic.name }} Utilization - LicenseHubK12{% endblock %}
 {% block content %}
-<h1 class="h4 mb-3">{{ sw.name }} — License Utilization</h1>
+<h1 class="h4 mb-3">{{ lic.name }} — License Utilization</h1>
 
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ sw.license_count }}</div><div class="stat-label">Total Licenses</div></div></div>
-  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ sw.assigned_licenses }}</div><div class="stat-label">Assigned</div></div></div>
-  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ sw.available_licenses }}</div><div class="stat-label">Available</div></div></div>
-  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ sw.utilization_pct }}%</div><div class="stat-label">Utilization</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ lic.license_count }}</div><div class="stat-label">Total Licenses</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ lic.assigned_licenses }}</div><div class="stat-label">Assigned</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ lic.available_licenses }}</div><div class="stat-label">Available</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ lic.utilization_pct }}%</div><div class="stat-label">Utilization</div></div></div>
 </div>
 
 <div class="row g-3">
@@ -15,7 +15,7 @@
     <div class="card h-100">
       <div class="card-header">Allocation by School</div>
       <div class="card-body">
-        <canvas id="utilizationChart" role="img" aria-label="Bar chart of license allocation by school for {{ sw.name }}"></canvas>
+        <canvas id="utilizationChart" role="img" aria-label="Bar chart of license allocation by school for {{ lic.name }}"></canvas>
       </div>
     </div>
   </div>
@@ -30,7 +30,7 @@
             <tr>
               <td><a href="{{ url_for('schools.view_school', id=a.school_id) }}">{{ a.school.name }}</a></td>
               <td>{{ a.allocated_count }}</td>
-              <td>{{ ((a.allocated_count / sw.license_count) * 100) | round(1) if sw.license_count else 0 }}%</td>
+              <td>{{ ((a.allocated_count / lic.license_count) * 100) | round(1) if lic.license_count else 0 }}%</td>
             </tr>
             {% else %}
             <tr><td colspan="3" class="text-center text-muted py-4">No school allocations yet.</td></tr>

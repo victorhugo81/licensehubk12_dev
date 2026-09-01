@@ -6,7 +6,7 @@ from wtforms import (
 )
 from wtforms.validators import DataRequired, Email, EqualTo, Length, NumberRange, Optional, Regexp, ValidationError
 
-from app.models import Contract, Role, School, Software
+from app.models import Contract, License, Role, School
 
 
 class LoginForm(FlaskForm):
@@ -84,8 +84,8 @@ class CategoryForm(FlaskForm):
     submit = SubmitField("Save category")
 
 
-class SoftwareForm(FlaskForm):
-    name = StringField("Software name", validators=[DataRequired(), Length(max=150)])
+class LicenseForm(FlaskForm):
+    name = StringField("License name", validators=[DataRequired(), Length(max=150)])
     vendor_id = SelectField("Vendor", coerce=int, validators=[DataRequired()])
     category_id = SelectField("Category", coerce=int, validators=[Optional()])
     description = TextAreaField("Description", validators=[Optional()])
@@ -97,8 +97,8 @@ class SoftwareForm(FlaskForm):
     support_url = StringField("Support URL", validators=[Optional(), Length(max=255)])
     login_url = StringField("Login URL", validators=[Optional(), Length(max=255)])
     notes = TextAreaField("Notes", validators=[Optional()])
-    status = SelectField("Status", choices=[(s, s) for s in Software.STATUSES], validators=[DataRequired()])
-    submit = SubmitField("Save software")
+    status = SelectField("Status", choices=[(s, s) for s in License.STATUSES], validators=[DataRequired()])
+    submit = SubmitField("Save license")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -121,14 +121,14 @@ class AllocationForm(FlaskForm):
 
 
 class ContractForm(FlaskForm):
-    """Vendor and software are implicit: a contract is always created and
-    edited from its software's detail page, and takes that software's
-    vendor rather than asking again. License type, annual cost and vendor
-    contact live here rather than on Software, since they're terms of a
-    specific agreement and can change from one contract/renewal to the
-    next."""
-    contract_number = StringField("Contract number", validators=[DataRequired(), Length(max=100)])
-    license_type = SelectField("License type", choices=[(t, t) for t in Software.LICENSE_TYPES], validators=[DataRequired()])
+    """Vendor and license are implicit: a contract is always created and
+    edited from its license's detail page, and takes that license's
+    vendor rather than asking again. Annual cost and vendor contact live
+    here rather than on License, since they're terms of a specific
+    agreement and can change from one contract/renewal to the next.
+    PO number is the one identifying number for a contract - there's no
+    separate contract number."""
+    po_number = StringField("PO number", validators=[DataRequired(), Length(max=100)])
     vendor_contact = StringField("Vendor contact", validators=[Optional(), Length(max=150)])
     start_date = DateField("Start date", validators=[DataRequired()])
     end_date = DateField("End date", validators=[DataRequired()])
@@ -137,7 +137,6 @@ class ContractForm(FlaskForm):
     payment_frequency = SelectField("Payment frequency", choices=[(p, p) for p in Contract.PAYMENT_FREQUENCIES], validators=[DataRequired()])
     auto_renewal = BooleanField("Auto renewal")
     cancellation_deadline = DateField("Cancellation deadline", validators=[Optional()])
-    po_number = StringField("PO number", validators=[Optional(), Length(max=100)])
     notes = TextAreaField("Notes", validators=[Optional()])
     submit = SubmitField("Save contract")
 

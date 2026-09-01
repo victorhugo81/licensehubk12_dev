@@ -25,16 +25,16 @@ def test_expiration_status_thresholds():
     assert compute_expiration_status(None, thresholds, today) == "unknown"
 
 
-def test_software_computed_properties(software, db):
-    software.license_count = 100
-    assert software.available_licenses == 100
-    assert software.utilization_pct == 0
+def test_license_computed_properties(license_, db):
+    license_.license_count = 100
+    assert license_.available_licenses == 100
+    assert license_.utilization_pct == 0
 
-    allocation_service.set_allocation(software, _make_school(db, "A"), 40)
+    allocation_service.set_allocation(license_, _make_school(db, "A"), 40)
     db.session.commit()
-    assert software.assigned_licenses == 40
-    assert software.available_licenses == 60
-    assert software.utilization_pct == 40.0
+    assert license_.assigned_licenses == 40
+    assert license_.available_licenses == 60
+    assert license_.utilization_pct == 40.0
 
 
 def _make_school(db, suffix):
@@ -45,60 +45,60 @@ def _make_school(db, suffix):
     return s
 
 
-def test_allocation_cannot_exceed_district_total(software, db):
+def test_allocation_cannot_exceed_district_total(license_, db):
     school_a = _make_school(db, "A")
     school_b = _make_school(db, "B")
 
-    allocation_service.set_allocation(software, school_a, 60)
+    allocation_service.set_allocation(license_, school_a, 60)
     db.session.commit()
 
     with pytest.raises(allocation_service.AllocationError):
-        allocation_service.set_allocation(software, school_b, 50)  # 60 + 50 > 100
+        allocation_service.set_allocation(license_, school_b, 50)  # 60 + 50 > 100
     db.session.rollback()
 
     # Exactly at the limit is fine.
-    allocation_service.set_allocation(software, school_b, 40)
+    allocation_service.set_allocation(license_, school_b, 40)
     db.session.commit()
-    assert software.assigned_licenses == 100
+    assert license_.assigned_licenses == 100
 
 
-def test_allocation_update_excludes_its_own_previous_value(software, db):
+def test_allocation_update_excludes_its_own_previous_value(license_, db):
     school_a = _make_school(db, "A")
-    allocation_service.set_allocation(software, school_a, 90)
+    allocation_service.set_allocation(license_, school_a, 90)
     db.session.commit()
 
     # Updating the same school's allocation shouldn't double-count its old value.
-    allocation_service.set_allocation(software, school_a, 100)
+    allocation_service.set_allocation(license_, school_a, 100)
     db.session.commit()
-    assert software.assigned_licenses == 100
+    assert license_.assigned_licenses == 100
 
 
-def test_allocation_negative_rejected(software, db):
+def test_allocation_negative_rejected(license_, db):
     school_a = _make_school(db, "A")
     with pytest.raises(allocation_service.AllocationError):
-        allocation_service.set_allocation(software, school_a, -5)
+        allocation_service.set_allocation(license_, school_a, -5)
 
 
-def test_software_crud_via_web(client, db, admin_user, vendor):
+def test_license_crud_via_web(client, db, admin_user, vendor):
     login(client, "admin@example.com")
 
-    resp = client.post("/software/add", data={
-        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0, "license_type": "Subscription",
-        "license_count": "50", "annual_cost": "1000", "status": "Active",
+    resp = client.post("/licenses/add", data={
+        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0,
+        "license_count": "50", "status": "Active",
     }, follow_redirects=True)
     assert resp.status_code == 200
 
-    from app.models import Software
-    sw = Software.query.filter_by(name="NewSoft").first()
-    assert sw is not None
-    assert sw.license_count == 50
+    from app.models import License
+    lic = License.query.filter_by(name="NewSoft").first()
+    assert lic is not None
+    assert lic.license_count == 50
 
-    resp = client.post(f"/software/{sw.id}/edit", data={
-        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0, "license_type": "Subscription",
-        "license_count": "75", "annual_cost": "1000", "status": "Active",
+    resp = client.post(f"/licenses/{lic.id}/edit", data={
+        "name": "NewSoft", "vendor_id": vendor.id, "category_id": 0,
+        "license_count": "75", "status": "Active",
     }, follow_redirects=True)
-    db.session.refresh(sw)
-    assert sw.license_count == 75
+    db.session.refresh(lic)
+    assert lic.license_count == 75
 
-    resp = client.post(f"/software/{sw.id}/delete", follow_redirects=True)
-    assert Software.query.filter_by(name="NewSoft").first() is None
+    resp = client.post(f"/licenses/{lic.id}/delete", follow_redirects=True)
+    assert License.query.filter_by(name="NewSoft").first() is None

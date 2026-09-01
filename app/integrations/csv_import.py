@@ -1,4 +1,4 @@
-"""CSV bulk import for software/license/school-allocation data (spec section 12).
+"""CSV bulk import for license/school-allocation data (spec section 12).
 
 Two-phase by design: `validate_csv()` never touches the database and is
 safe to call repeatedly for a preview; `commit_import()` is the only
@@ -6,7 +6,7 @@ function that writes, and it re-validates against live DB state (via
 app.services.allocation) before writing each row so a race between preview
 and commit can't smuggle in an over-allocation.
 
-Expected columns: software, vendor, school, total_licenses,
+Expected columns: license, vendor, school, total_licenses,
 assigned_licenses, expiration_date, annual_cost
 """
 import csv
@@ -16,10 +16,10 @@ from datetime import datetime, date, timedelta
 from decimal import Decimal, InvalidOperation
 
 from app.extensions import db
-from app.models import Category, Contract, School, Software, Vendor
+from app.models import Category, Contract, License, School, Vendor
 from app.services import allocation as allocation_service
 
-REQUIRED_COLUMNS = ["software", "vendor", "school", "total_licenses", "assigned_licenses", "expiration_date", "annual_cost"]
+REQUIRED_COLUMNS = ["license", "vendor", "school", "total_licenses", "assigned_licenses", "expiration_date", "annual_cost"]
 
 
 @dataclass
@@ -97,20 +97,20 @@ def validate_csv(file_stream) -> ImportPreview:
                               column_errors=[f"Missing required column(s): {', '.join(missing)}"])
 
     existing_schools = {s.name.strip().lower(): s for s in School.query.all()}
-    existing_software = {s.name.strip().lower(): s for s in Software.query.all()}
+    existing_licenses = {lic.name.strip().lower(): lic for lic in License.query.all()}
 
     rows: list[RowResult] = []
-    software_totals: dict[str, int] = {}
-    software_assigned_sum: dict[str, int] = {}
+    license_totals: dict[str, int] = {}
+    license_assigned_sum: dict[str, int] = {}
 
     for i, raw_row in enumerate(reader, start=2):  # header is row 1
         result = RowResult(row_number=i, data=dict(raw_row))
-        software_name = (raw_row.get("software") or "").strip()
+        license_name = (raw_row.get("license") or "").strip()
         vendor_name = (raw_row.get("vendor") or "").strip()
         school_name = (raw_row.get("school") or "").strip()
 
-        if not software_name:
-            result.add_error("Software name is required.")
+        if not license_name:
+            result.add_error("License name is required.")
         if not vendor_name:
             result.add_error("Vendor is required.")
         if not school_name:
@@ -141,37 +141,37 @@ def validate_csv(file_stream) -> ImportPreview:
         if raw_row.get("annual_cost") and annual_cost is None:
             result.add_error("annual_cost must be a non-negative number.")
 
-        existing_sw = existing_software.get(software_name.lower()) if software_name else None
-        if existing_sw and existing_sw.vendor.name.strip().lower() != vendor_name.lower():
+        existing_lic = existing_licenses.get(license_name.lower()) if license_name else None
+        if existing_lic and existing_lic.vendor.name.strip().lower() != vendor_name.lower():
             result.add_warning(
-                f"'{software_name}' already exists with vendor '{existing_sw.vendor.name}'; "
+                f"'{license_name}' already exists with vendor '{existing_lic.vendor.name}'; "
                 f"the vendor will not be changed to '{vendor_name}'."
             )
 
-        if software_name and total_licenses is not None:
-            key = software_name.lower()
-            software_totals[key] = max(software_totals.get(key, 0), total_licenses)
+        if license_name and total_licenses is not None:
+            key = license_name.lower()
+            license_totals[key] = max(license_totals.get(key, 0), total_licenses)
 
         rows.append(result)
 
-    # Cross-row check: total assigned per software (this import batch) can't
-    # exceed that software's district total_licenses.
+    # Cross-row check: total assigned per license (this import batch) can't
+    # exceed that license's district total_licenses.
     for result in rows:
         if result.status == "error":
             continue
-        key = (result.data.get("software") or "").strip().lower()
+        key = (result.data.get("license") or "").strip().lower()
         assigned = _parse_int(result.data.get("assigned_licenses")) or 0
-        software_assigned_sum[key] = software_assigned_sum.get(key, 0) + assigned
+        license_assigned_sum[key] = license_assigned_sum.get(key, 0) + assigned
 
     for result in rows:
         if result.status == "error":
             continue
-        key = (result.data.get("software") or "").strip().lower()
-        total = software_totals.get(key)
-        assigned_sum = software_assigned_sum.get(key)
+        key = (result.data.get("license") or "").strip().lower()
+        total = license_totals.get(key)
+        assigned_sum = license_assigned_sum.get(key)
         if total is not None and assigned_sum is not None and assigned_sum > total:
             result.add_error(
-                f"Combined assigned_licenses across all rows for '{result.data.get('software')}' "
+                f"Combined assigned_licenses across all rows for '{result.data.get('license')}' "
                 f"({assigned_sum}) exceeds its total_licenses ({total})."
             )
 
@@ -182,19 +182,19 @@ def validate_csv(file_stream) -> ImportPreview:
     return ImportPreview(rows=rows, total=len(rows), valid=valid, warnings=warnings, errors=errors)
 
 
-def _upsert_import_contract(software, annual_cost):
-    """Annual cost lives on Contract, not Software - but the CSV format has
-    no contract_number/license_type/vendor_contact columns to key one on.
-    Import instead maintains one canonical, stable-keyed contract per
-    software to hold the imported figure, so re-importing an updated CSV
-    updates that same contract rather than creating duplicates."""
-    contract_number = f"IMPORT-{software.id}"
-    contract = Contract.query.filter_by(software_id=software.id, contract_number=contract_number).first()
-    end_date = software.expiration_date or (date.today() + timedelta(days=365))
+def _upsert_import_contract(lic, annual_cost):
+    """Annual cost lives on Contract, not License - but the CSV format has
+    no po_number/vendor_contact columns to key one on. Import instead
+    maintains one canonical, stable-keyed contract per license to hold the
+    imported figure, so re-importing an updated CSV updates that same
+    contract rather than creating duplicates."""
+    po_number = f"IMPORT-{lic.id}"
+    contract = Contract.query.filter_by(license_id=lic.id, po_number=po_number).first()
+    end_date = lic.expiration_date or (date.today() + timedelta(days=365))
     if contract is None:
         contract = Contract(
-            contract_number=contract_number, software=software, vendor_id=software.vendor_id,
-            license_type="District License", start_date=date.today(), end_date=end_date,
+            po_number=po_number, license=lic, vendor_id=lic.vendor_id,
+            start_date=date.today(), end_date=end_date,
             payment_frequency="Annual",
         )
         db.session.add(contract)
@@ -206,7 +206,7 @@ def _upsert_import_contract(software, annual_cost):
 
 def commit_import(preview: ImportPreview, imported_by=None):
     """Commit every non-error row from a previously computed preview.
-    Errors are never imported. Returns (created_software, updated_software, allocation_errors)."""
+    Errors are never imported. Returns (created_licenses, updated_licenses, allocation_errors)."""
     created, updated = 0, 0
     allocation_errors = []
 
@@ -215,7 +215,7 @@ def commit_import(preview: ImportPreview, imported_by=None):
             continue
 
         data = result.data
-        software_name = data["software"].strip()
+        license_name = data["license"].strip()
         vendor_name = data["vendor"].strip()
         school_name = data["school"].strip()
         total_licenses = _parse_int(data.get("total_licenses"))
@@ -234,31 +234,31 @@ def commit_import(preview: ImportPreview, imported_by=None):
             allocation_errors.append(f"Row {result.row_number}: school '{school_name}' not found, skipped.")
             continue
 
-        software = Software.query.filter(db.func.lower(Software.name) == software_name.lower()).first()
-        if software is None:
-            software = Software(
-                name=software_name,
+        lic = License.query.filter(db.func.lower(License.name) == license_name.lower()).first()
+        if lic is None:
+            lic = License(
+                name=license_name,
                 vendor=vendor,
                 license_count=total_licenses or 0,
                 expiration_date=expiration,
                 status="Active",
                 created_by_id=imported_by.id if imported_by else None,
             )
-            db.session.add(software)
+            db.session.add(lic)
             db.session.flush()
             created += 1
         else:
             if total_licenses is not None:
-                software.license_count = max(software.license_count, total_licenses)
+                lic.license_count = max(lic.license_count, total_licenses)
             if expiration:
-                software.expiration_date = expiration
+                lic.expiration_date = expiration
             updated += 1
 
         if annual_cost:
-            _upsert_import_contract(software, annual_cost)
+            _upsert_import_contract(lic, annual_cost)
 
         try:
-            allocation_service.set_allocation(software, school, assigned_licenses)
+            allocation_service.set_allocation(lic, school, assigned_licenses)
         except allocation_service.AllocationError as exc:
             allocation_errors.append(f"Row {result.row_number}: {exc}")
 

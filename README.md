@@ -7,19 +7,19 @@ Built as part of the same suite as TrackItK12, AssistItK12, and AnalyticsK12, an
 ## Features
 
 - **Dashboard** — district-wide license status, utilization, expiring licenses (30/60/90-day filters), recent activity, and color-coded alerts.
-- **Software & license management** — full CRUD with search, filtering, and server-side pagination; per-school allocation with a hard-enforced rule that allocations can never exceed a software's total license count.
-- **License utilization** — per-software breakdown with a Chart.js chart of allocation by school.
-- **Schools, vendors, and contracts** — full CRUD, with vendor pages rolling up spend and expiring licenses, and contracts tracking renewal/cancellation deadlines.
-- **CSV import** — two-phase (preview, then commit) bulk import of software/license/allocation data; invalid rows are never written to the database.
-- **Reports** — inventory, expiring licenses, utilization, spending (by software/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
+- **License management** — full CRUD with search, filtering, and server-side pagination; per-school allocation with a hard-enforced rule that allocations can never exceed a license's total license count.
+- **License utilization** — per-license breakdown with a Chart.js chart of allocation by school.
+- **Schools, vendors, and contracts** — full CRUD, with vendor pages rolling up spend and expiring licenses, and contracts tracking annual cost, vendor contact, renewal/cancellation deadlines.
+- **CSV import** — two-phase (preview, then commit) bulk import of license/allocation data; invalid rows are never written to the database.
+- **Reports** — inventory, expiring licenses, utilization, spending (by license/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
 - **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, and unused licenses.
 - **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI).
 - **Audit log** — every create/update/delete records who, what, when, from where, and the field-level diff.
-- **JSON API** — session- or bearer-token-authenticated endpoints for software, licenses, vendors, schools, and expiring-license queries, built for future SIS/Clever/Canvas integration.
+- **JSON API** — session- or bearer-token-authenticated endpoints for licenses, vendors, schools, and expiring-license queries, built for future SIS/Clever/Canvas integration.
 
 ## Screenshots
 
-_placeholder — add screenshots of the dashboard, software detail, and reports pages here._
+_placeholder — add screenshots of the dashboard, license detail, and reports pages here._
 
 ## Tech stack
 
@@ -51,7 +51,7 @@ victor.solis@licensehubk12.example.org / ChangeMe!2026
 
 ### Guided setup (`installation/`)
 
-For a real district instance rather than a local demo, use the interactive scripts under `installation/` — they generate `.env` for you and seed only the real baseline data (roles, categories, default thresholds, one admin user), with no fictional vendors/software:
+For a real district instance rather than a local demo, use the interactive scripts under `installation/` — they generate `.env` for you and seed only the real baseline data (roles, categories, default thresholds, one admin user), with no fictional vendors/licenses:
 
 ```bash
 uv sync
@@ -93,7 +93,7 @@ uv run flask db downgrade -1     # roll back one migration
 uv run flask seed
 ```
 
-Populates fictional sample data: five roles, category list, a small fictional district (5 schools + a district office), five vendors (IXL Learning, Curriculum Associates, Benchmark Education, Canvas/Instructure, Clever), five software titles with realistic allocations and contracts, and one demo user per role. Safe to re-run — it upserts rather than duplicating.
+Populates fictional sample data: five roles, category list, a small fictional district (5 schools + a district office), five vendors (IXL Learning, Curriculum Associates, Benchmark Education, Canvas/Instructure, Clever), five license titles with realistic allocations and contracts, and one demo user per role. Safe to re-run — it upserts rather than duplicating.
 
 ## Running locally
 

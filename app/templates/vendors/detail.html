@@ -18,7 +18,7 @@
 </div>
 
 <div class="row g-3 mb-3">
-  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.software | length }}</div><div class="stat-label">Software Products</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.licenses | length }}</div><div class="stat-label">Licenses</div></div></div>
   <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.contracts | length }}</div><div class="stat-label">Contracts</div></div></div>
   <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ upcoming_contracts | length }}</div><div class="stat-label">Active Contracts</div></div></div>
   <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ vendor.total_annual_spend | money }}</div><div class="stat-label">Annual Spend</div></div></div>
@@ -41,18 +41,18 @@
   </div>
   <div class="col-lg-6">
     <div class="card mb-3">
-      <div class="card-header">Software Products</div>
+      <div class="card-header">Licenses</div>
       <div class="table-responsive">
         <table class="table table-sm mb-0">
-          <thead><tr><th>Software</th><th>Status</th></tr></thead>
+          <thead><tr><th>License</th><th>Status</th></tr></thead>
           <tbody>
-            {% for s in vendor.software %}
+            {% for lic in vendor.licenses %}
             <tr>
-              <td><a href="{{ url_for('licenses.view_software', id=s.id) }}">{{ s.name }}</a></td>
-              <td><span class="status-badge status-{{ compute_expiration_status(s.expiration_date, thresholds) }}">{{ status_label(compute_expiration_status(s.expiration_date, thresholds)) }}</span></td>
+              <td><a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a></td>
+              <td><span class="status-badge status-{{ compute_expiration_status(lic.expiration_date, thresholds) }}">{{ status_label(compute_expiration_status(lic.expiration_date, thresholds)) }}</span></td>
             </tr>
             {% else %}
-            <tr><td colspan="2" class="text-muted text-center py-3">No software linked.</td></tr>
+            <tr><td colspan="2" class="text-muted text-center py-3">No licenses linked.</td></tr>
             {% endfor %}
           </tbody>
         </table>

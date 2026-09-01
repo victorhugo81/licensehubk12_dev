@@ -8,15 +8,15 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Software</th><th>Total</th><th>Assigned</th><th>Available</th><th>Utilization</th></tr></thead>
+      <thead><tr><th>License</th><th>Total</th><th>Assigned</th><th>Available</th><th>Utilization</th></tr></thead>
       <tbody>
-        {% for s in software_list %}
+        {% for lic in license_list %}
         <tr>
-          <td>{{ s.name }}</td><td>{{ s.license_count }}</td><td>{{ s.assigned_licenses }}</td><td>{{ s.available_licenses }}</td>
+          <td>{{ lic.name }}</td><td>{{ lic.license_count }}</td><td>{{ lic.assigned_licenses }}</td><td>{{ lic.available_licenses }}</td>
           <td style="min-width: 160px;">
             <div class="d-flex align-items-center gap-2">
-              <div class="progress flex-grow-1"><div class="progress-bar {{ 'progress-bar-critical' if s.utilization_pct >= 100 else 'progress-bar-warning' if s.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ s.utilization_pct }}%"></div></div>
-              <span class="small">{{ s.utilization_pct }}%</span>
+              <div class="progress flex-grow-1"><div class="progress-bar {{ 'progress-bar-critical' if lic.utilization_pct >= 100 else 'progress-bar-warning' if lic.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ lic.utilization_pct }}%"></div></div>
+              <span class="small">{{ lic.utilization_pct }}%</span>
             </div>
           </td>
         </tr>

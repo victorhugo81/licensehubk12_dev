@@ -36,15 +36,15 @@
       <div class="card-header">Licensed Software</div>
       <div class="table-responsive">
         <table class="table table-hover mb-0">
-          <thead><tr><th>Software</th><th>Allocated Licenses</th></tr></thead>
+          <thead><tr><th>License</th><th>Allocated Licenses</th></tr></thead>
           <tbody>
             {% for a in allocations %}
             <tr>
-              <td><a href="{{ url_for('licenses.view_software', id=a.software_id) }}">{{ a.software.name }}</a></td>
+              <td><a href="{{ url_for('licenses.view_license', id=a.license_id) }}">{{ a.license.name }}</a></td>
               <td>{{ a.allocated_count }}</td>
             </tr>
             {% else %}
-            <tr><td colspan="2" class="text-muted text-center py-3">No software allocated to this school yet.</td></tr>
+            <tr><td colspan="2" class="text-muted text-center py-3">No licenses allocated to this school yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>
