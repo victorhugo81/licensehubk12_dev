@@ -21,6 +21,12 @@
         {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
       </select>
     </div>
+    <div class="col-md-3">
+      <select name="status" class="form-select form-select-sm">
+        <option value="">All statuses</option>
+        {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ status_label(s) }}</option>{% endfor %}
+      </select>
+    </div>
     <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
   </form>
 </div></div>
@@ -28,9 +34,10 @@
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>PO Number</th><th>Vendor</th><th>Start Date</th><th>End Date</th><th>Licenses</th><th>Annual Cost</th></tr></thead>
+      <thead><tr><th>PO Number</th><th>Vendor</th><th>Start Date</th><th>End Date</th><th>Licenses</th><th>Annual Cost</th><th>Status</th></tr></thead>
       <tbody>
         {% for c in contracts %}
+        {% set computed = compute_expiration_status(c.end_date, thresholds) %}
         <tr class="{{ 'table-danger' if c.days_until_end < 0 else 'table-warning' if c.days_until_end <= 30 else '' }}">
           <td><a href="{{ url_for('contracts.view_contract', id=c.id) }}">{{ c.po_number }}</a></td>
           <td>{{ c.vendor.name }}</td>
@@ -38,9 +45,10 @@
           <td>{{ c.end_date | dateformat }}</td>
           <td>{{ c.licenses | length }}</td>
           <td>{{ c.annual_cost | money }}</td>
+          <td><span class="status-badge status-{{ computed }}">{{ status_label(computed) }}</span></td>
         </tr>
         {% else %}
-        <tr><td colspan="6" class="text-muted text-center py-4">No contracts found.</td></tr>
+        <tr><td colspan="7" class="text-muted text-center py-4">No contracts found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

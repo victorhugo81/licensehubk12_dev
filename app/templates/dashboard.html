@@ -50,35 +50,43 @@
 
 <div class="row g-3 mb-3">
   <div class="col-6 col-lg">
-    <div class="stat-tile h-100">
-      <div class="stat-icon mb-2" style="background: var(--status-info-bg); color: var(--status-info);"><i class="bi bi-collection"></i></div>
-      <div class="stat-value">{{ kpis.total }}</div>
-      <div class="stat-label">Total Licenses</div>
-    </div>
+    <a href="{{ url_for('licenses.list_licenses') }}" class="stat-tile h-100 d-flex align-items-start justify-content-between gap-2 text-decoration-none text-reset">
+      <div>
+        <div class="stat-value">{{ kpis.total }}</div>
+        <div class="stat-label">Total Licenses</div>
+      </div>
+      <div class="stat-icon flex-shrink-0" style="background: var(--status-info-bg); color: var(--status-info);"><i class="bi bi-collection"></i></div>
+    </a>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile h-100">
-      <div class="stat-icon mb-2" style="background: var(--status-good-bg); color: var(--status-good);"><i class="bi bi-check-circle"></i></div>
-      <div class="stat-value">{{ kpis.active }}</div>
-      <div class="stat-label">Active Licenses</div>
-      <div class="text-muted-soft small mt-1">{{ kpis.active_pct }}% of total</div>
-    </div>
+    <a href="{{ url_for('licenses.list_licenses', status='active') }}" class="stat-tile h-100 d-flex align-items-start justify-content-between gap-2 text-decoration-none text-reset">
+      <div>
+        <div class="stat-value">{{ kpis.active }}</div>
+        <div class="stat-label">Active Licenses</div>
+        <div class="text-muted-soft small mt-1">{{ kpis.active_pct }}% of total</div>
+      </div>
+      <div class="stat-icon flex-shrink-0" style="background: var(--status-good-bg); color: var(--status-good);"><i class="bi bi-check-circle"></i></div>
+    </a>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile h-100">
-      <div class="stat-icon mb-2" style="background: var(--status-warning-bg); color: var(--status-warning);"><i class="bi bi-hourglass-split"></i></div>
-      <div class="stat-value">{{ kpis.expiring_soon }}</div>
-      <div class="stat-label">Expiring Soon</div>
-      <div class="text-muted-soft small mt-1">Next {{ expiring_days }} days</div>
-    </div>
+    <a href="{{ url_for('licenses.list_licenses', status='critical') }}" class="stat-tile h-100 d-flex align-items-start justify-content-between gap-2 text-decoration-none text-reset">
+      <div>
+        <div class="stat-value">{{ kpis.expiring_soon }}</div>
+        <div class="stat-label">Expiring Soon</div>
+        <div class="text-muted-soft small mt-1">Next {{ expiring_days }} days</div>
+      </div>
+      <div class="stat-icon flex-shrink-0" style="background: var(--status-warning-bg); color: var(--status-warning);"><i class="bi bi-hourglass-split"></i></div>
+    </a>
   </div>
   <div class="col-6 col-lg">
-    <div class="stat-tile h-100">
-      <div class="stat-icon mb-2" style="background: var(--status-critical-bg); color: var(--status-critical);"><i class="bi bi-x-octagon"></i></div>
-      <div class="stat-value">{{ kpis.expired }}</div>
-      <div class="stat-label">Expired</div>
-      <div class="text-muted-soft small mt-1">{{ kpis.expired_pct }}% of total</div>
-    </div>
+    <a href="{{ url_for('licenses.list_licenses', status='expired') }}" class="stat-tile h-100 d-flex align-items-start justify-content-between gap-2 text-decoration-none text-reset">
+      <div>
+        <div class="stat-value">{{ kpis.expired }}</div>
+        <div class="stat-label">Expired</div>
+        <div class="text-muted-soft small mt-1">{{ kpis.expired_pct }}% of total</div>
+      </div>
+      <div class="stat-icon flex-shrink-0" style="background: var(--status-critical-bg); color: var(--status-critical);"><i class="bi bi-x-octagon"></i></div>
+    </a>
   </div>
 </div>
 
@@ -284,7 +292,7 @@
         {% for lic in utilization %}
           <div class="mb-3">
             <div class="d-flex justify-content-between small mb-1">
-              <a href="{{ url_for('licenses.utilization', id=lic.id) }}">{{ lic.name }}</a>
+              <a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a>
               <span class="text-muted">{{ lic.assigned_licenses }} / {{ lic.license_count }} ({{ lic.utilization_pct }}%)</span>
             </div>
             <div class="progress" role="progressbar" aria-valuenow="{{ lic.utilization_pct }}" aria-valuemin="0" aria-valuemax="100" aria-label="{{ lic.name }} utilization">

@@ -13,33 +13,33 @@
 <div class="card mb-3">
   <div class="card-body">
     <form method="get" class="row g-2 align-items-end">
-      <div class="col-md-3">
+      <div class="col-md">
         <label class="form-label small mb-1" for="q">Search</label>
         <input type="search" id="q" name="q" class="form-control form-control-sm" value="{{ request.args.get('q', '') }}" placeholder="License name…">
       </div>
-      <div class="col-md-2">
+      <div class="col-md">
         <label class="form-label small mb-1" for="vendor_id">Vendor</label>
-        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm">
+        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All</option>
           {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md">
         <label class="form-label small mb-1" for="category_id">Category</label>
-        <select id="category_id" name="category_id" class="form-select form-select-sm">
+        <select id="category_id" name="category_id" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All</option>
           {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (request.args.get('category_id') | int(0)) == c.id }}>{{ c.name }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-2">
+      <div class="col-md">
         <label class="form-label small mb-1" for="status">Status</label>
-        <select id="status" name="status" class="form-select form-select-sm">
+        <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
           <option value="">All</option>
-          {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s }}</option>{% endfor %}
+          {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ status_label(s) }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md-1">
-        <button class="btn btn-sm btn-outline-primary w-100" type="submit">Filter</button>
+      <div class="col-md-auto">
+        <a href="{{ url_for('licenses.list_licenses') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
       </div>
     </form>
   </div>
@@ -51,7 +51,7 @@
       <thead>
         <tr>
           <th>License</th><th>Vendor</th><th>Category</th>
-          <th>Licenses</th><th>Utilization</th><th>Expiration</th><th>Status</th><th></th>
+          <th>Licenses</th><th>Expiration</th><th>Status</th><th></th>
         </tr>
       </thead>
       <tbody>
@@ -62,7 +62,6 @@
           <td>{{ lic.vendor.name }}</td>
           <td>{{ lic.category.name if lic.category else '—' }}</td>
           <td>{{ lic.assigned_licenses }} / {{ lic.license_count }}</td>
-          <td>{{ lic.utilization_pct }}%</td>
           <td>{{ lic.expiration_date | dateformat }}</td>
           <td>
             {% if lic.status != 'Active' %}
@@ -79,7 +78,7 @@
           </td>
         </tr>
         {% else %}
-        <tr><td colspan="8" class="text-center text-muted py-4">No licenses found.</td></tr>
+        <tr><td colspan="7" class="text-center text-muted py-4">No licenses found.</td></tr>
         {% endfor %}
       </tbody>
     </table>

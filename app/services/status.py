@@ -34,7 +34,7 @@ STATUS_LABELS = {
     STATUS_ACTIVE: "Active",
     STATUS_UPCOMING: "Upcoming",
     STATUS_WARNING: "Warning",
-    STATUS_CRITICAL: "Critical",
+    STATUS_CRITICAL: "Expiring",
     STATUS_EXPIRED: "Expired",
     STATUS_UNKNOWN: "Unknown",
 }

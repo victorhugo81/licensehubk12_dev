@@ -43,7 +43,6 @@
     <div class="progress mt-2" style="height: 0.85rem;">
       <div class="progress-bar {{ 'progress-bar-critical' if lic.utilization_pct >= 100 else 'progress-bar-warning' if lic.utilization_pct >= 90 else 'progress-bar-good' }}" style="width: {{ lic.utilization_pct }}%"></div>
     </div>
-    <a href="{{ url_for('licenses.utilization', id=lic.id) }}" class="small d-inline-block mt-2">View detailed utilization &amp; chart &rarr;</a>
   </div>
 </div>
 
@@ -80,9 +79,9 @@
       <div class="card-header">School Allocation</div>
       <div class="table-responsive">
         <table class="table table-sm mb-0">
-          <thead><tr><th>School</th><th>Allocated</th>{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}<th></th>{% endif %}</tr></thead>
+          <thead><tr><th>School</th><th>Allocated</th><th>% of Total</th>{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}<th></th>{% endif %}</tr></thead>
           <tbody>
-            {% for a in lic.allocations %}
+            {% for a in allocations %}
             <tr>
               <td><a href="{{ url_for('schools.view_school', id=a.school_id) }}">{{ a.school.name }}</a></td>
               {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
@@ -94,6 +93,7 @@
                   <button class="btn btn-sm btn-outline-secondary" title="Save"><i class="bi bi-check-lg"></i></button>
                 </form>
               </td>
+              <td>{{ ((a.allocated_count / lic.license_count) * 100) | round(1) if lic.license_count else 0 }}%</td>
               <td class="text-end">
                 <form method="post" action="{{ url_for('licenses.delete_allocation', id=lic.id, allocation_id=a.id) }}" onsubmit="return confirm('Remove this allocation?');">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -102,14 +102,20 @@
               </td>
               {% else %}
               <td>{{ a.allocated_count }}</td>
+              <td>{{ ((a.allocated_count / lic.license_count) * 100) | round(1) if lic.license_count else 0 }}%</td>
               {% endif %}
             </tr>
             {% else %}
-            <tr><td colspan="3" class="text-muted text-center py-3">No allocations yet.</td></tr>
+            <tr><td colspan="4" class="text-muted text-center py-3">No allocations yet.</td></tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
+      {% if pagination and pagination.pages > 1 %}
+      <div class="card-body border-top py-2">
+        {% include "includes/pagination.html" %}
+      </div>
+      {% endif %}
       {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
       <div class="card-body border-top">
         <form method="post" action="{{ url_for('licenses.add_allocation', id=lic.id) }}" class="row g-2 align-items-end">

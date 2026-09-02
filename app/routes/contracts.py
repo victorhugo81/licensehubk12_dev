@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import login_required
 
@@ -5,7 +7,10 @@ from app.extensions import db
 from app.forms import ContractForm
 from app.models import Contract, Vendor
 from app.services.audit import diff_changes, log_action
-from app.services.status import compute_expiration_status, get_thresholds
+from app.services.status import (
+    STATUS_ACTIVE, STATUS_CRITICAL, STATUS_EXPIRED, STATUS_UPCOMING, STATUS_WARNING,
+    compute_expiration_status, get_thresholds,
+)
 from app.utils.decorators import permission_required
 
 # Adding/editing/deleting a contract is still done from its vendor's
@@ -30,11 +35,33 @@ def list_contracts():
     if q:
         query = query.filter(Contract.po_number.ilike(f"%{q}%"))
 
+    thresholds = get_thresholds()
+
+    status = request.args.get("status", "").strip()
+    if status:
+        today = date.today()
+        critical_cutoff = today + timedelta(days=thresholds["critical_days"])
+        warning_cutoff = today + timedelta(days=thresholds["warning_days"])
+        upcoming_cutoff = today + timedelta(days=thresholds["upcoming_days"])
+        if status == STATUS_EXPIRED:
+            query = query.filter(Contract.end_date < today)
+        elif status == STATUS_CRITICAL:
+            query = query.filter(Contract.end_date >= today, Contract.end_date <= critical_cutoff)
+        elif status == STATUS_WARNING:
+            query = query.filter(Contract.end_date > critical_cutoff, Contract.end_date <= warning_cutoff)
+        elif status == STATUS_UPCOMING:
+            query = query.filter(Contract.end_date > warning_cutoff, Contract.end_date <= upcoming_cutoff)
+        elif status == STATUS_ACTIVE:
+            query = query.filter(Contract.end_date > upcoming_cutoff)
+
     page = request.args.get("page", 1, type=int)
     pagination = query.order_by(Contract.end_date).paginate(page=page, per_page=PER_PAGE, error_out=False)
     return render_template(
         "contracts/list.html", pagination=pagination, contracts=pagination.items,
         vendors=Vendor.query.order_by(Vendor.name).all(),
+        statuses=[STATUS_ACTIVE, STATUS_UPCOMING, STATUS_WARNING, STATUS_CRITICAL, STATUS_EXPIRED],
+        thresholds=thresholds,
+        compute_expiration_status=compute_expiration_status,
     )
 
 

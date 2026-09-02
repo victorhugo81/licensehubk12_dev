@@ -1,3 +1,5 @@
+from datetime import date, timedelta
+
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
@@ -6,7 +8,10 @@ from app.forms import AllocationForm, CategoryForm, LicenseForm
 from app.models import Category, Contract, License, LicenseAllocation, Role, School, Vendor
 from app.services import allocation as allocation_service
 from app.services.audit import diff_changes, log_action
-from app.services.status import compute_expiration_status, get_thresholds
+from app.services.status import (
+    STATUS_ACTIVE, STATUS_CRITICAL, STATUS_EXPIRED, STATUS_UPCOMING, STATUS_WARNING,
+    compute_expiration_status, get_thresholds,
+)
 from app.utils.decorators import permission_required, scope_to_school
 
 licenses_bp = Blueprint("licenses", __name__)
@@ -43,11 +48,25 @@ def list_licenses():
     if category_id:
         query = query.filter(License.category_id == category_id)
 
+    thresholds = get_thresholds()
+
     status = request.args.get("status", "").strip()
     if status:
-        query = query.filter(License.status == status)
-
-    thresholds = get_thresholds()
+        query = query.join(License.contract)
+        today = date.today()
+        critical_cutoff = today + timedelta(days=thresholds["critical_days"])
+        warning_cutoff = today + timedelta(days=thresholds["warning_days"])
+        upcoming_cutoff = today + timedelta(days=thresholds["upcoming_days"])
+        if status == STATUS_EXPIRED:
+            query = query.filter(Contract.end_date < today)
+        elif status == STATUS_CRITICAL:
+            query = query.filter(Contract.end_date >= today, Contract.end_date <= critical_cutoff)
+        elif status == STATUS_WARNING:
+            query = query.filter(Contract.end_date > critical_cutoff, Contract.end_date <= warning_cutoff)
+        elif status == STATUS_UPCOMING:
+            query = query.filter(Contract.end_date > warning_cutoff, Contract.end_date <= upcoming_cutoff)
+        elif status == STATUS_ACTIVE:
+            query = query.filter(Contract.end_date > upcoming_cutoff)
 
     page = request.args.get("page", 1, type=int)
     pagination = query.order_by(License.name).paginate(page=page, per_page=PER_PAGE, error_out=False)
@@ -59,7 +78,7 @@ def list_licenses():
         vendors=Vendor.query.order_by(Vendor.name).all(),
         categories=Category.query.order_by(Category.name).all(),
         contracts=Contract.query.order_by(Contract.po_number).all(),
-        statuses=License.STATUSES,
+        statuses=[STATUS_ACTIVE, STATUS_UPCOMING, STATUS_WARNING, STATUS_CRITICAL, STATUS_EXPIRED],
         thresholds=thresholds,
         compute_expiration_status=compute_expiration_status,
     )
@@ -104,12 +123,18 @@ def view_license(id):
         if not any(a.school_id == current_user.school_id for a in lic.allocations):
             abort(403)
     thresholds = get_thresholds()
+    page = request.args.get("page", 1, type=int)
+    allocation_pagination = LicenseAllocation.query.filter_by(license_id=lic.id).order_by(
+        LicenseAllocation.allocated_count.desc()
+    ).paginate(page=page, per_page=PER_PAGE, error_out=False)
     return render_template(
         "licenses/detail.html",
         lic=lic,
         thresholds=thresholds,
         computed_status=compute_expiration_status(lic.expiration_date, thresholds),
         allocation_form=AllocationForm(),
+        allocations=allocation_pagination.items,
+        pagination=allocation_pagination,
     )
 
 
@@ -146,17 +171,6 @@ def delete_license(id):
     db.session.commit()
     flash(f"{name} deleted.", "success")
     return redirect(url_for("licenses.list_licenses"))
-
-
-@licenses_bp.route("/licenses/<int:id>/utilization")
-@login_required
-def utilization(id):
-    lic = License.query.get_or_404(id)
-    if current_user.has_role(Role.SCHOOL_ADMINISTRATOR):
-        if not any(a.school_id == current_user.school_id for a in lic.allocations):
-            abort(403)
-    allocations = sorted(lic.allocations, key=lambda a: a.allocated_count, reverse=True)
-    return render_template("licenses/utilization.html", lic=lic, allocations=allocations)
 
 
 @licenses_bp.route("/licenses/<int:id>/allocations", methods=["POST"])
