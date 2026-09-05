@@ -43,7 +43,7 @@
 <div class="card mt-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span>Licenses</span>
-    {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+    {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator', 'School Administrator') %}
     <a href="{{ url_for('licenses.add_license', contract_id=contract.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Add License</a>
     {% endif %}
   </div>

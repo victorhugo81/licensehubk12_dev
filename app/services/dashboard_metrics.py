@@ -191,68 +191,6 @@ def underutilized_licenses(license_list):
     return rows
 
 
-def potential_savings(license_list, thresholds):
-    """Estimated, not guaranteed: expired-but-still-Active-status licenses'
-    full cost share, plus the wasted-seat share of extremely underutilized
-    (<20%) licenses."""
-    expired_waste = 0.0
-    underutilized_waste = 0.0
-    for lic in license_list:
-        share = _license_cost_share(lic)
-        if not share:
-            continue
-        status = compute_expiration_status(lic.expiration_date, thresholds)
-        if status == STATUS_EXPIRED and lic.status != "Cancelled":
-            expired_waste += share
-            continue
-        if lic.license_count and lic.utilization_pct < 20:
-            wasted_fraction = lic.available_licenses / lic.license_count
-            underutilized_waste += wasted_fraction * share
-    return {
-        "total": round(expired_waste + underutilized_waste, 2),
-        "expired": round(expired_waste, 2),
-        "underutilized": round(underutilized_waste, 2),
-    }
-
-
-def potential_duplicates(license_list):
-    """Heuristic only: active licenses sharing a category but coming from
-    more than one vendor. Never presented as a confirmed duplicate - always
-    labeled 'Potential Duplicate - Review'."""
-    by_category = {}
-    for lic in license_list:
-        if lic.status != "Active" or not lic.category:
-            continue
-        by_category.setdefault(lic.category, []).append(lic)
-    rows = [(cat, lics) for cat, lics in by_category.items() if len({lic.vendor_id for lic in lics}) > 1]
-    rows.sort(key=lambda pair: len(pair[1]), reverse=True)
-    return rows
-
-
-def data_quality_score(license_list):
-    """% of licenses with the optional-but-expected fields filled in:
-    category, PO number, description, and at least one school allocation."""
-    checks = [
-        ("missing a category", lambda lic: lic.category_id is not None),
-        ("missing a PO number", lambda lic: bool(lic.po_number)),
-        ("missing a description", lambda lic: bool(lic.description)),
-        ("not allocated to any school", lambda lic: len(lic.allocations) > 0),
-    ]
-    if not license_list:
-        return {"pct": 100.0, "missing_fields": 0, "total_fields": 0, "issues": []}
-
-    total = len(license_list) * len(checks)
-    missing = 0
-    issues = []
-    for lic in license_list:
-        for label, check in checks:
-            if not check(lic):
-                missing += 1
-                issues.append((lic, label))
-    pct = round(((total - missing) / total) * 100, 1)
-    return {"pct": pct, "missing_fields": missing, "total_fields": total, "issues": issues}
-
-
 def school_comparison(license_list, thresholds):
     spend_map = dict(spend_by_school(license_list))
     per_school = {}

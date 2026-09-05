@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">All Licenses</h1>
-  {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+  {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator', 'School Administrator') %}
   <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newLicenseModal">
     <i class="bi bi-plus-lg"></i> Add License
   </button>
@@ -88,7 +88,7 @@
   </div>
 </div>
 
-{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator') %}
+{% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator', 'School Administrator') %}
 <div class="modal fade" id="newLicenseModal" tabindex="-1" aria-labelledby="newLicenseModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">

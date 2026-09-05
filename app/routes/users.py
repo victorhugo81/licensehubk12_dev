@@ -104,16 +104,3 @@ def toggle_active(id):
     db.session.commit()
     flash(f"User {user.full_name} {'activated' if user.is_active_account else 'deactivated'}.", "success")
     return redirect(url_for("users.list_users"))
-
-
-@users_bp.route("/<int:id>/api-key", methods=["POST"])
-@login_required
-@permission_required("manage_users")
-def regenerate_api_key(id):
-    user = User.query.get_or_404(id)
-    user.generate_api_key()
-    db.session.commit()
-    log_action("update", "user", user.id, {"api_key": "regenerated"})
-    db.session.commit()
-    flash(f"API key regenerated for {user.full_name}.", "success")
-    return redirect(url_for("users.edit_user", id=id))

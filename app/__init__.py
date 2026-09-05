@@ -77,10 +77,6 @@ def _register_blueprints(app):
     app.register_blueprint(audit_bp)
     app.register_blueprint(imports_bp)
 
-    # The JSON API authenticates state-changing requests with a per-user
-    # bearer token (see app/utils/api_auth.py) rather than the session
-    # cookie, so it does not need form-based CSRF protection.
-    csrf.exempt(api_bp)
     app.register_blueprint(api_bp)
 
 

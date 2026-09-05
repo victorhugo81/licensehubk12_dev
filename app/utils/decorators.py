@@ -32,6 +32,16 @@ PERMISSIONS = {
     "view_reports": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.CURRICULUM_ADMINISTRATOR,
                       Role.SCHOOL_ADMINISTRATOR, Role.VIEWER},
     "view_district_wide": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.CURRICULUM_ADMINISTRATOR, Role.VIEWER},
+    # Narrower than manage_vendors/manage_contracts/manage_licenses:
+    # School Administrator may create new vendors/contracts/licenses (a
+    # district-wide vendor/contract, and a license that gets auto-allocated
+    # entirely to their own school - see licenses.add_license), but still
+    # can't edit or delete vendors/contracts/licenses via the manage_*
+    # permissions above, matching how they're scoped to their own school
+    # everywhere else in the app.
+    "add_vendors": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.SCHOOL_ADMINISTRATOR},
+    "add_contracts": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.SCHOOL_ADMINISTRATOR},
+    "add_licenses": {Role.ADMINISTRATOR, Role.IT_ADMINISTRATOR, Role.CURRICULUM_ADMINISTRATOR, Role.SCHOOL_ADMINISTRATOR},
 }
 
 

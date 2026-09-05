@@ -15,7 +15,7 @@ Built as part of the same suite as TrackItK12, AssistItK12, and AnalyticsK12, an
 - **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, and unused licenses.
 - **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI).
 - **Audit log** — every create/update/delete records who, what, when, from where, and the field-level diff.
-- **JSON API** — session- or bearer-token-authenticated endpoints for licenses, vendors, schools, and expiring-license queries, built for future SIS/Clever/Canvas integration.
+- **JSON API** — session-authenticated read endpoints for licenses, vendors, schools, and expiring-license queries, built for future SIS/Clever/Canvas integration.
 
 ## Screenshots
 
@@ -119,7 +119,7 @@ uv run pytest                    # test suite
 - Passwords are hashed with Werkzeug's `generate_password_hash` (PBKDF2/scrypt) — never stored or logged in plaintext.
 - CSRF protection is enabled globally (Flask-WTF `CSRFProtect`); every form includes a token.
 - RBAC is enforced at the route-decorator level (`app/utils/decorators.py`), not just by hiding UI — verified directly in `tests/test_rbac.py`.
-- The JSON API requires a per-user bearer token for any state-changing request; a browser session alone can never be leveraged for a cross-site write against it.
+- The JSON API authenticates via the same session cookie as the rest of the app and is subject to standard CSRF protection, so a state-changing request needs an authenticated same-origin session with a valid CSRF token — it isn't reachable as a bare external API.
 - Login is rate-limited and accounts lock temporarily after repeated failed attempts.
 - CSV imports are validated field-by-field before any database write; invalid rows are never imported, and uploaded files are never trusted for their filename or extension.
 - All database access goes through the SQLAlchemy ORM — no raw SQL string interpolation.

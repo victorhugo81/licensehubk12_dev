@@ -1,5 +1,4 @@
 import json
-import secrets
 from datetime import datetime, date, timezone
 
 from flask_login import UserMixin
@@ -118,17 +117,6 @@ class User(UserMixin, db.Model):
 
     reset_token = db.Column(db.String(255), unique=True, nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
-
-    # Bearer token for the JSON API (app/routes/api.py). Session cookies are
-    # sufficient for GET requests made by the app's own pages, but
-    # state-changing API calls (and any future SIS/Clever/Canvas
-    # integration) require this token instead, so a browser session alone
-    # can never be tricked into an authenticated cross-site write.
-    api_key = db.Column(db.String(64), unique=True, nullable=True)
-
-    def generate_api_key(self):
-        self.api_key = secrets.token_hex(32)
-        return self.api_key
 
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)

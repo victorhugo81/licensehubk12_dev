@@ -3,7 +3,7 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Contracts</h1>
-  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  {% if current_user.has_role('Administrator', 'IT Administrator', 'School Administrator') %}
   <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#newContractModal">
     <i class="bi bi-plus-lg"></i> New Contract
   </button>
@@ -12,22 +12,22 @@
 
 <div class="card mb-3"><div class="card-body">
   <form method="get" class="row g-2">
-    <div class="col-md-4">
+    <div class="col-md">
       <input type="search" name="q" class="form-control form-control-sm" placeholder="PO number…" value="{{ request.args.get('q', '') }}">
     </div>
-    <div class="col-md-3">
+    <div class="col-md">
       <select name="vendor_id" class="form-select form-select-sm">
         <option value="">All vendors</option>
         {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-md-3">
+    <div class="col-md">
       <select name="status" class="form-select form-select-sm">
         <option value="">All statuses</option>
         {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ status_label(s) }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+    <div class="col-md-auto"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
   </form>
 </div></div>
 

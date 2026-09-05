@@ -37,7 +37,7 @@ def list_vendors():
 
 @vendors_bp.route("/add", methods=["GET", "POST"])
 @login_required
-@permission_required("manage_vendors")
+@permission_required("add_vendors")
 def add_vendor():
     form = VendorForm()
     if form.validate_on_submit():

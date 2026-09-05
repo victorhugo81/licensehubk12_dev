@@ -10,14 +10,14 @@
 
 <div class="card mb-3"><div class="card-body">
   <form method="get" class="row g-2">
-    <div class="col-md-4"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search schools…" value="{{ request.args.get('q', '') }}"></div>
-    <div class="col-md-3">
+    <div class="col-md"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search schools…" value="{{ request.args.get('q', '') }}"></div>
+    <div class="col-md">
       <select name="school_type" class="form-select form-select-sm">
         <option value="">All types</option>
         {% for t in types %}<option value="{{ t }}" {{ 'selected' if request.args.get('school_type') == t }}>{{ t }}</option>{% endfor %}
       </select>
     </div>
-    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
+    <div class="col-md-auto"><button class="btn btn-sm btn-outline-primary" type="submit">Filter</button></div>
   </form>
 </div></div>
 

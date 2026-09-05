@@ -50,16 +50,12 @@ def index():
     )[:6]
     underutilized = metrics.underutilized_licenses(license_list)[:8]
 
-    savings = metrics.potential_savings(license_list, thresholds)
-    quality = metrics.data_quality_score(license_list)
-
-    school_spend, vendor_spend, category_spend, school_rows, duplicates = [], [], [], [], []
+    school_spend, vendor_spend, category_spend, school_rows = [], [], [], []
     if can_view_district_wide:
         school_spend = metrics.spend_by_school(license_list)[:8]
         vendor_spend = metrics.spend_by_vendor(license_list)[:8]
         category_spend = metrics.spend_by_category(license_list)[:8]
         school_rows = metrics.school_comparison(license_list, thresholds)
-        duplicates = metrics.potential_duplicates(license_list)
     elif current_user.school:
         total_annual_spend = metrics.spend_for_school(current_user.school, license_list)
 
@@ -73,13 +69,10 @@ def index():
         underutilized=underutilized,
         expiring=expiring,
         expiring_days=expiring_days,
-        savings=savings,
-        quality=quality,
         school_spend=school_spend,
         vendor_spend=vendor_spend,
         category_spend=category_spend,
         school_rows=school_rows,
-        duplicates=duplicates,
         vendors=Vendor.query.order_by(Vendor.name).all(),
         categories=Category.query.order_by(Category.name).all(),
         schools=School.query.filter_by(is_active=True).order_by(School.name).all() if can_view_district_wide else [],

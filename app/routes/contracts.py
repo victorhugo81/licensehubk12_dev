@@ -67,7 +67,7 @@ def list_contracts():
 
 @contracts_bp.route("/contracts/new")
 @login_required
-@permission_required("manage_contracts")
+@permission_required("add_contracts")
 def new_contract_redirect():
     vendor_id = request.args.get("vendor_id", type=int)
     if not vendor_id:
@@ -88,7 +88,7 @@ def _form_data(c):
 
 @contracts_bp.route("/vendors/<int:vendor_id>/contracts/add", methods=["GET", "POST"])
 @login_required
-@permission_required("manage_contracts")
+@permission_required("add_contracts")
 def add_contract(vendor_id):
     vendor = Vendor.query.get_or_404(vendor_id)
     form = ContractForm()

@@ -3,17 +3,17 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
   <h1 class="h4 mb-0">Vendors</h1>
-  {% if current_user.has_role('Administrator', 'IT Administrator') %}
+  {% if current_user.has_role('Administrator', 'IT Administrator', 'School Administrator') %}
   <a href="{{ url_for('vendors.add_vendor') }}" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg"></i> Add Vendor</a>
   {% endif %}
 </div>
 
 <div class="card mb-3"><div class="card-body">
   <form method="get" class="row g-2">
-    <div class="col-md-4">
+    <div class="col-md">
       <input type="search" name="q" class="form-control form-control-sm" placeholder="Search vendors…" value="{{ request.args.get('q', '') }}">
     </div>
-    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Search</button></div>
+    <div class="col-md-auto"><button class="btn btn-sm btn-outline-primary" type="submit">Search</button></div>
   </form>
 </div></div>
 

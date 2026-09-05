@@ -49,15 +49,22 @@ def test_session_cookie_secure_flags_in_production_config():
     assert app.config["DEBUG"] is False
 
 
-def test_api_bearer_token_not_accepted_as_query_param(csrf_app):
+def test_api_write_without_csrf_token_is_rejected(csrf_app):
+    # The JSON API blueprint is no longer CSRF-exempt (it has no separate
+    # bearer-token mechanism anymore) - a logged-in session alone must not
+    # be enough to drive a state-changing API request.
+    import re
     client = csrf_app.test_client()
-    from app.models import User
-    with csrf_app.app_context():
-        user = User.query.filter_by(email="admin@example.com").first()
-        user.generate_api_key()
-        _db.session.commit()
-        token = user.api_key
-    # Passing the token as a query string must not authenticate - only the
-    # Authorization header is honored.
-    resp = client.get(f"/api/licenses?api_key={token}")
-    assert resp.status_code == 401
+    login_page = client.get("/auth/login")
+    token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', login_page.get_data(as_text=True)).group(1)
+    resp = client.post(
+        "/auth/login",
+        data={"email": "admin@example.com", "password": "Password123!", "csrf_token": token},
+        follow_redirects=True,
+    )
+    assert resp.status_code == 200
+
+    resp = client.post("/api/licenses", json={"name": "Blocked"})
+    assert resp.status_code in (400, 403)
+    from app.models import License
+    assert License.query.filter_by(name="Blocked").first() is None

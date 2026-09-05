@@ -86,7 +86,7 @@ def list_licenses():
 
 @licenses_bp.route("/licenses/new")
 @login_required
-@permission_required("manage_licenses")
+@permission_required("add_licenses")
 def new_license_redirect():
     contract_id = request.args.get("contract_id", type=int)
     if not contract_id:
@@ -98,7 +98,7 @@ def new_license_redirect():
 
 @licenses_bp.route("/contracts/<int:contract_id>/licenses/add", methods=["GET", "POST"])
 @login_required
-@permission_required("manage_licenses")
+@permission_required("add_licenses")
 def add_license(contract_id):
     contract = Contract.query.get_or_404(contract_id)
     form = LicenseForm()
@@ -109,6 +109,21 @@ def add_license(contract_id):
         db.session.add(lic)
         db.session.commit()
         log_action("create", "license", lic.id, {"name": lic.name})
+
+        # A School Administrator has no way to allocate to any other
+        # school (the manual allocation form/routes stay manage_licenses-
+        # only), so a license they add is entirely theirs - allocate its
+        # full seat count to their own school right away instead of
+        # leaving it unallocated.
+        if current_user.has_role(Role.SCHOOL_ADMINISTRATOR) and current_user.school:
+            try:
+                allocation_service.set_allocation(lic, current_user.school, lic.license_count)
+                log_action("update", "license_allocation", lic.id, {
+                    "school": current_user.school.name, "allocated_count": lic.license_count,
+                })
+            except allocation_service.AllocationError:
+                pass
+
         db.session.commit()
         flash(f"{lic.name} added.", "success")
         return redirect(url_for("licenses.view_license", id=lic.id))

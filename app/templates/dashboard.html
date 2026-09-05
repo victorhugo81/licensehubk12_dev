@@ -105,7 +105,7 @@
     </div>
   </div>
   <div class="col-lg-6">
-    <div class="spend-hero" style="background: var(--bs-main-color-secondary);">
+    <div class="spend-hero">
       <div class="spend-hero-label">Upcoming Renewal Cost</div>
       <div class="spend-hero-value">{{ upcoming_renewal_cost | money }}</div>
       <div class="spend-hero-sub">Contracts renewing in the next {{ expiring_days }} days</div>
@@ -241,7 +241,7 @@
 </div>
 
 <div class="row g-3 mb-4">
-  <div class="col-lg-6">
+  <div class="col-12">
     <div class="card h-100">
       <div class="card-header">Spending by Category</div>
       <div class="table-responsive">
@@ -255,26 +255,6 @@
             </tr>
             {% else %}
             <tr><td colspan="2" class="text-muted text-center py-3">No spend data.</td></tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Potential Duplicate Software <span class="text-muted-soft small">— Review</span></div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Category</th><th>Licenses</th></tr></thead>
-          <tbody>
-            {% for cat, lics in duplicates %}
-            <tr>
-              <td>{{ cat.name }}</td>
-              <td>{% for lic in lics %}<a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a> ({{ lic.vendor.name }}){% if not loop.last %}, {% endif %}{% endfor %}</td>
-            </tr>
-            {% else %}
-            <tr><td colspan="2" class="text-muted text-center py-3">No potential duplicates found.</td></tr>
             {% endfor %}
           </tbody>
         </table>
@@ -324,31 +304,6 @@
             {% endfor %}
           </tbody>
         </table>
-      </div>
-    </div>
-  </div>
-</div>
-
-<div class="row g-3 mb-4">
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">Potential Savings <span class="text-muted-soft small">— estimated, not guaranteed</span></div>
-      <div class="card-body">
-        <div class="h3 fw-bold mb-2">{{ savings.total | money }}</div>
-        <div class="d-flex justify-content-between small mb-1"><span>Expired but still marked Active</span><span class="fw-semibold">{{ savings.expired | money }}</span></div>
-        <div class="d-flex justify-content-between small"><span>Extremely underutilized seats (&lt;20%)</span><span class="fw-semibold">{{ savings.underutilized | money }}</span></div>
-      </div>
-    </div>
-  </div>
-  <div class="col-lg-6">
-    <div class="card h-100">
-      <div class="card-header">License Data Quality</div>
-      <div class="card-body">
-        <div class="h3 fw-bold mb-1">{{ quality.pct }}%</div>
-        <div class="text-muted small mb-2">{{ quality.missing_fields }} of {{ quality.total_fields }} required fields need attention.</div>
-        {% for lic, label in quality.issues[:5] %}
-          <div class="small text-muted-soft"><a href="{{ url_for('licenses.view_license', id=lic.id) }}">{{ lic.name }}</a> — {{ label }}</div>
-        {% endfor %}
       </div>
     </div>
   </div>

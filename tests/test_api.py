@@ -14,19 +14,15 @@ def test_api_get_works_with_session_login(client, admin_user, license_):
     assert "TestSoft" in names
 
 
-def test_api_write_rejected_without_bearer_token(client, admin_user, vendor):
-    login(client, "admin@example.com")
+def test_api_write_requires_authentication(client, vendor):
     resp = client.post("/api/licenses", json={"name": "Blocked", "vendor_id": vendor.id})
     assert resp.status_code == 401
 
 
-def test_api_write_succeeds_with_bearer_token(client, admin_user, contract, db):
-    admin_user.generate_api_key()
-    db.session.commit()
-
+def test_api_write_succeeds_with_session_login(client, admin_user, contract):
+    login(client, "admin@example.com")
     resp = client.post(
         "/api/licenses",
-        headers={"Authorization": f"Bearer {admin_user.api_key}"},
         json={"name": "ApiCreated", "contract_id": contract.id, "license_count": 20},
     )
     assert resp.status_code == 201
@@ -35,26 +31,15 @@ def test_api_write_succeeds_with_bearer_token(client, admin_user, contract, db):
     assert body["license_count"] == 20
 
 
-def test_api_rejects_invalid_bearer_token(client):
-    resp = client.get("/api/licenses", headers={"Authorization": "Bearer not-a-real-token"})
-    assert resp.status_code == 401
-
-
-def test_api_permission_denied_for_viewer_write(client, viewer_user, vendor, db):
-    viewer_user.generate_api_key()
-    db.session.commit()
-    resp = client.post(
-        "/api/licenses",
-        headers={"Authorization": f"Bearer {viewer_user.api_key}"},
-        json={"name": "ShouldFail", "vendor_id": vendor.id},
-    )
+def test_api_permission_denied_for_viewer_write(client, viewer_user, vendor):
+    login(client, "viewer@example.com")
+    resp = client.post("/api/licenses", json={"name": "ShouldFail", "vendor_id": vendor.id})
     assert resp.status_code == 403
 
 
 def test_api_delete_license(client, admin_user, license_, db):
-    admin_user.generate_api_key()
-    db.session.commit()
-    resp = client.delete(f"/api/licenses/{license_.id}", headers={"Authorization": f"Bearer {admin_user.api_key}"})
+    login(client, "admin@example.com")
+    resp = client.delete(f"/api/licenses/{license_.id}")
     assert resp.status_code == 200
 
     from app.models import License
