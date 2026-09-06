@@ -1,3 +1,11 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="app/static/img/licensehubk12_dark.png">
+    <source media="(prefers-color-scheme: light)" srcset="app/static/img/licensehubk12%20-%20White%20Logo.png">
+    <img alt="LicenseHubK12" src="app/static/img/licensehubk12%20-%20White%20Logo.png" width="360">
+  </picture>
+</p>
+
 # LicenseHubK12
 
 A software license management platform for K-12 school districts. IT, curriculum, and district administrators use it to track educational software licenses, contracts, vendors, per-school allocations, renewals, and spend — one place to answer *"what do we own, who's using it, and what needs renewing?"*
@@ -11,9 +19,10 @@ Built as part of the same suite as TrackItK12, AssistItK12, and AnalyticsK12, an
 - **License utilization** — per-license breakdown with a Chart.js chart of allocation by school.
 - **Schools, vendors, and contracts** — full CRUD, following the district's real setup order (School → Vendor → Contract → License): contracts are created under a vendor and can bundle multiple license titles, with vendor pages rolling up spend and expiring licenses, and contracts tracking vendor contact and renewal/cancellation deadlines.
 - **CSV import** — two-phase (preview, then commit) bulk import of license/allocation data; invalid rows are never written to the database.
+- **Bulk user import** — create many user accounts at once from a CSV file, or configure a scheduled FTP/FTPS pull that runs the same import automatically; new accounts get a password-set link instead of a visible temporary password (Settings > Bulk User Import).
 - **Reports** — inventory, expiring licenses, utilization, spending (by contract/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
-- **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, and unused licenses.
-- **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI).
+- **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, unused licenses, and new licenses being added; each notification is clickable (marks it read and opens the license/contract it's about), and every category can be turned on/off independently (Settings > Notification Settings).
+- **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI). School Administrators can additionally create (but not edit/delete) vendors, contracts, and licenses, scoped to their own school.
 - **Audit log** — every create/update/delete records who, what, when, from where, and the field-level diff.
 - **JSON API** — session-authenticated read endpoints for licenses, vendors, schools, and expiring-license queries, built for future SIS/Clever/Canvas integration.
 
@@ -23,11 +32,12 @@ _placeholder — add screenshots of the dashboard, license detail, and reports p
 
 ## Tech stack
 
-- Python 3.13+, Flask (app factory pattern), Flask-SQLAlchemy, Flask-Login, Flask-WTF, Flask-Migrate/Alembic, Flask-Limiter, Flask-APScheduler (optional)
+- Python 3.13+, Flask (app factory pattern), Flask-SQLAlchemy, Flask-Login, Flask-WTF, Flask-Migrate/Alembic, Flask-Limiter, Flask-Mail, Flask-APScheduler (optional)
 - SQLite for local development; MySQL/MariaDB in production via `DATABASE_URL`
 - Bootstrap 5 + Bootstrap Icons + Jinja2, Chart.js
 - `uv` for dependency management
 - openpyxl / reportlab for Excel/PDF report exports
+- `cryptography` for encrypting the FTP import password at rest; `redis` (optional) for shared rate-limit storage across multiple gunicorn workers
 
 ## Installation
 
@@ -36,7 +46,8 @@ This project uses [`uv`](https://docs.astral.sh/uv/) — not pip/venv — for de
 ```bash
 uv sync
 cp .env.example .env
-# edit .env and set a real SECRET_KEY
+# edit .env: set a real SECRET_KEY (the app won't start without one) -
+# APP_ENV=development is already set for local use
 
 uv run flask db upgrade
 uv run flask seed        # optional: fictional demo district data
@@ -139,9 +150,9 @@ uv run pytest                    # test suite
 ```text
 app/
   routes/          Flask blueprints (one per feature area)
-  services/        business logic: status calculation, allocation rules, audit, notifications, automated checks
-  integrations/    pluggable external-system connectors (Synergy, Clever, Canvas, CSV import)
-  utils/           RBAC decorators, API auth, exports, template filters
+  services/        business logic: status calculation, allocation rules, audit, notifications, automated checks, email
+  integrations/    pluggable external-system connectors (Synergy, Clever, Canvas, CSV import, FTP user import)
+  utils/           RBAC decorators, API auth, exports, template filters, encryption helpers
   templates/       Jinja2 templates, organized to match the blueprints
   static/          CSS (Bootstrap 5 + design tokens), JS, images
   models.py        SQLAlchemy models
