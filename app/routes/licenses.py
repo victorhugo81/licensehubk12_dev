@@ -2,6 +2,7 @@ from datetime import date, timedelta
 
 from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
+from sqlalchemy import and_, false, or_
 
 from app.extensions import db
 from app.forms import AllocationForm, CategoryForm, LicenseForm
@@ -17,6 +18,7 @@ from app.utils.decorators import permission_required, scope_to_school
 licenses_bp = Blueprint("licenses", __name__)
 
 PER_PAGE = 20
+ALL_STATUSES = [STATUS_ACTIVE, STATUS_UPCOMING, STATUS_WARNING, STATUS_CRITICAL, STATUS_EXPIRED]
 
 
 def _license_form_data(lic):
@@ -50,23 +52,30 @@ def list_licenses():
 
     thresholds = get_thresholds()
 
-    status = request.args.get("status", "").strip()
-    if status:
+    status_filtered = "status_filtered" in request.args
+    if status_filtered:
+        selected_statuses = request.args.getlist("status")
+    else:
+        selected_statuses = [s for s in ALL_STATUSES if s != STATUS_EXPIRED]
+
+    if set(selected_statuses) != set(ALL_STATUSES):
         query = query.join(License.contract)
         today = date.today()
         critical_cutoff = today + timedelta(days=thresholds["critical_days"])
         warning_cutoff = today + timedelta(days=thresholds["warning_days"])
         upcoming_cutoff = today + timedelta(days=thresholds["upcoming_days"])
-        if status == STATUS_EXPIRED:
-            query = query.filter(Contract.end_date < today)
-        elif status == STATUS_CRITICAL:
-            query = query.filter(Contract.end_date >= today, Contract.end_date <= critical_cutoff)
-        elif status == STATUS_WARNING:
-            query = query.filter(Contract.end_date > critical_cutoff, Contract.end_date <= warning_cutoff)
-        elif status == STATUS_UPCOMING:
-            query = query.filter(Contract.end_date > warning_cutoff, Contract.end_date <= upcoming_cutoff)
-        elif status == STATUS_ACTIVE:
-            query = query.filter(Contract.end_date > upcoming_cutoff)
+        conditions = []
+        if STATUS_EXPIRED in selected_statuses:
+            conditions.append(Contract.end_date < today)
+        if STATUS_CRITICAL in selected_statuses:
+            conditions.append(and_(Contract.end_date >= today, Contract.end_date <= critical_cutoff))
+        if STATUS_WARNING in selected_statuses:
+            conditions.append(and_(Contract.end_date > critical_cutoff, Contract.end_date <= warning_cutoff))
+        if STATUS_UPCOMING in selected_statuses:
+            conditions.append(and_(Contract.end_date > warning_cutoff, Contract.end_date <= upcoming_cutoff))
+        if STATUS_ACTIVE in selected_statuses:
+            conditions.append(Contract.end_date > upcoming_cutoff)
+        query = query.filter(or_(*conditions) if conditions else false())
 
     page = request.args.get("page", 1, type=int)
     pagination = query.order_by(License.name).paginate(page=page, per_page=PER_PAGE, error_out=False)
@@ -78,7 +87,8 @@ def list_licenses():
         vendors=Vendor.query.order_by(Vendor.name).all(),
         categories=Category.query.order_by(Category.name).all(),
         contracts=Contract.query.order_by(Contract.po_number).all(),
-        statuses=[STATUS_ACTIVE, STATUS_UPCOMING, STATUS_WARNING, STATUS_CRITICAL, STATUS_EXPIRED],
+        statuses=ALL_STATUSES,
+        selected_statuses=selected_statuses,
         thresholds=thresholds,
         compute_expiration_status=compute_expiration_status,
     )

@@ -31,15 +31,33 @@
           {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (request.args.get('category_id') | int(0)) == c.id }}>{{ c.name }}</option>{% endfor %}
         </select>
       </div>
-      <div class="col-md">
-        <label class="form-label small mb-1" for="status">Status</label>
-        <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
-          <option value="">All</option>
-          {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ status_label(s) }}</option>{% endfor %}
-        </select>
-      </div>
       <div class="col-md-auto">
         <a href="{{ url_for('licenses.list_licenses') }}" class="btn btn-sm btn-outline-secondary w-100">Clear</a>
+      </div>
+      <div class="col-12">
+        <div class="accordion" id="statusAccordion">
+          <div class="accordion-item">
+            <h2 class="accordion-header">
+              <button class="accordion-button collapsed py-2" type="button" data-bs-toggle="collapse" data-bs-target="#statusCollapse" aria-expanded="false" aria-controls="statusCollapse">
+                Status
+              </button>
+            </h2>
+            <div id="statusCollapse" class="accordion-collapse collapse">
+              <div class="accordion-body py-2">
+                <div class="d-flex flex-wrap gap-3">
+                  {% for s in statuses %}
+                  <div class="form-check">
+                    <input type="checkbox" class="form-check-input" name="status" value="{{ s }}" id="status_{{ s }}"
+                      {{ 'checked' if s in selected_statuses }} onchange="this.form.submit()">
+                    <label class="form-check-label small" for="status_{{ s }}">{{ status_label(s) }}</label>
+                  </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <input type="hidden" name="status_filtered" value="1">
       </div>
     </form>
   </div>
@@ -51,7 +69,8 @@
       <thead>
         <tr>
           <th>License</th><th>Vendor</th><th>Category</th>
-          <th>Licenses</th><th>Expiration</th><th>Status</th><th></th>
+          <th>Licenses</th><th>Expiration</th><th>Status</th>
+          <th>Action</th>
         </tr>
       </thead>
       <tbody>
