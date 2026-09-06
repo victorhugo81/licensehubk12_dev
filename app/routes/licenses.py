@@ -8,6 +8,7 @@ from app.extensions import db
 from app.forms import AllocationForm, CategoryForm, LicenseForm
 from app.models import Category, Contract, License, LicenseAllocation, Role, School, Vendor
 from app.services import allocation as allocation_service
+from app.services import notifications
 from app.services.audit import diff_changes, log_action
 from app.services.status import (
     STATUS_ACTIVE, STATUS_CRITICAL, STATUS_EXPIRED, STATUS_UPCOMING, STATUS_WARNING,
@@ -119,6 +120,11 @@ def add_license(contract_id):
         db.session.add(lic)
         db.session.commit()
         log_action("create", "license", lic.id, {"name": lic.name})
+        notifications.notify(
+            "license_added", f"New license added: {lic.name}",
+            f"{lic.name} was added by {current_user.full_name}.",
+            severity="info", related_object_type="license", related_object_id=lic.id,
+        )
 
         # A School Administrator has no way to allocate to any other
         # school (the manual allocation form/routes stay manage_licenses-

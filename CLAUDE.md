@@ -73,6 +73,10 @@ Expired/Critical/Warning/Upcoming/Active is computed from `expiration_date` and 
 
 Note: because `allocation.py` hard-caps allocations at `license_count`, utilization can only exceed 100% if `license_count` was *reduced* after allocations were already made — the `over_allocated` check uses strict `>`, not `>=`, so a title sitting at exactly 100% (fully but validly subscribed) doesn't get flagged as a problem.
 
+### Notification categories (`app/services/notifications.py`, Settings > Notification Settings)
+
+Every call to `notify(type_, ...)` is gated by `NOTIFICATION_CATEGORIES` — a registry mapping each raw `type_` string (`license_expiration`, `contract_expiration`, `unused_licenses`, ...) to one admin-facing on/off toggle (a `Setting` row, default enabled). This is the single choke point: `checks.py`'s check functions never need their own enabled/disabled logic, and neither does any other caller — add a new notification type by adding one entry to `NOTIFICATION_CATEGORIES`, not by special-casing it at each call site. `license_added` fires from all three places a `License` can be created (`licenses.add_license`, `csv_import.py::commit_import`, `api.create_license`) — add the same `notifications.notify("license_added", ...)` call to any new license-creation path, or it'll silently be invisible to this toggle. `NotificationSettingsForm` in `app/forms.py` has one `BooleanField` per category, named to match `NOTIFICATION_CATEGORIES`' `key` exactly — the settings route iterates the registry rather than listing each field twice.
+
 ### Bulk User Import (`app/routes/user_imports.py`, `app/integrations/user_csv_import.py`, `app/integrations/ftp_users.py`)
 
 Two ways to provision many `User` accounts at once, both Administrator-only (`manage_users` — no separate "add-only" permission, unlike vendors/contracts/licenses, because creating a login is inherently sensitive):

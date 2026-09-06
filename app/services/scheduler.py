@@ -16,6 +16,13 @@ def init_scheduler(app):
     if not app.config.get("SCHEDULER_ENABLED"):
         return
 
+    if scheduler.running:
+        # scheduler is a module-level singleton, so a second create_app()
+        # call in the same process (multiple app instances in one test
+        # run, an app factory invoked more than once, ...) would otherwise
+        # hit "scheduler already running" on .start() below.
+        return
+
     scheduler.init_app(app)
 
     @scheduler.task("cron", id="run_license_checks", hour=6, minute=0)

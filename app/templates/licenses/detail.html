@@ -52,9 +52,8 @@
       <div class="card-header">License Information</div>
       <div class="card-body">
         <dl class="row mb-0 small">
-          <dt class="col-5">Contract</dt>
+          <dt class="col-5">PO Number</dt>
           <dd class="col-7"><a href="{{ url_for('contracts.view_contract', id=lic.contract.id) }}">{{ lic.contract.po_number }}</a></dd>
-          <dt class="col-5">PO Number</dt><dd class="col-7">{{ lic.po_number or '—' }}</dd>
           <dt class="col-5">Start Date</dt><dd class="col-7">{{ lic.start_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>
           <dt class="col-5">Expiration Date</dt><dd class="col-7">{{ lic.expiration_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>
           <dt class="col-5">Renewal Date</dt><dd class="col-7">{{ lic.renewal_date | dateformat }} <span class="text-muted-soft">(from contract)</span></dd>

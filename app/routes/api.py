@@ -4,6 +4,7 @@ from flask import Blueprint, jsonify, request
 
 from app.extensions import db
 from app.models import Contract, License, LicenseAllocation, Role, School, Vendor
+from app.services import notifications
 from app.services.audit import log_action
 from app.services.status import compute_expiration_status, get_thresholds
 from app.utils.api_auth import api_login_required, api_permission_required, api_user
@@ -87,6 +88,11 @@ def create_license():
     db.session.add(lic)
     db.session.commit()
     log_action("create", "license", lic.id, {"name": lic.name, "via": "api"})
+    notifications.notify(
+        "license_added", f"New license added: {lic.name}",
+        f"{lic.name} was added via the API.",
+        severity="info", related_object_type="license", related_object_id=lic.id,
+    )
     db.session.commit()
     return jsonify(_license_to_dict(lic)), 201
 

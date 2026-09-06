@@ -18,6 +18,7 @@ from decimal import Decimal, InvalidOperation
 from app.extensions import db
 from app.models import Category, Contract, License, School, Vendor
 from app.services import allocation as allocation_service
+from app.services import notifications
 
 REQUIRED_COLUMNS = ["license", "vendor", "school", "total_licenses", "assigned_licenses", "expiration_date", "annual_cost"]
 
@@ -264,6 +265,11 @@ def commit_import(preview: ImportPreview, imported_by=None):
             db.session.add(lic)
             db.session.flush()
             created += 1
+            notifications.notify(
+                "license_added", f"New license added: {lic.name}",
+                f"{lic.name} was added via CSV import.",
+                severity="info", related_object_type="license", related_object_id=lic.id,
+            )
         else:
             if total_licenses is not None:
                 lic.license_count = max(lic.license_count, total_licenses)

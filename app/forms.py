@@ -210,3 +210,17 @@ class SettingsForm(FlaskForm):
     def validate_upcoming_days(self, field):
         if self.warning_days.data and field.data and field.data <= self.warning_days.data:
             raise ValidationError("Upcoming threshold must be greater than the warning threshold.")
+
+
+class NotificationSettingsForm(FlaskForm):
+    # Field names match app.services.notifications.NOTIFICATION_CATEGORIES'
+    # "key" values exactly, so the route can set/read them by iterating
+    # that registry instead of listing each one twice.
+    notify_license_expiring = BooleanField("License Expiring or Expired", default=True)
+    notify_license_added = BooleanField("New License Added", default=True)
+    notify_contract_expiring = BooleanField("Contract Expiring", default=True)
+    notify_renewal_deadline = BooleanField("Cancellation Deadline Approaching", default=True)
+    notify_high_utilization = BooleanField("High Utilization", default=True)
+    notify_over_allocated = BooleanField("Over-Allocated", default=True)
+    notify_unused_licenses = BooleanField("Unused Licenses", default=True)
+    submit = SubmitField("Save notification settings")

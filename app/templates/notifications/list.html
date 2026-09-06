@@ -17,7 +17,7 @@
 <div class="card">
   <div class="list-group list-group-flush">
     {% for n in notifications %}
-    <div class="list-group-item d-flex justify-content-between align-items-start {{ 'bg-body-secondary' if not n.is_read }}">
+    {% set body %}
       <div class="d-flex gap-3">
         <span class="alert-dot {{ n.severity }} mt-1"></span>
         <div>
@@ -26,13 +26,29 @@
           <div class="small text-muted-soft">{{ n.created_at | timesince }}</div>
         </div>
       </div>
-      {% if not n.is_read %}
-      <form method="post" action="{{ url_for('notifications.mark_read', id=n.id) }}">
+    {% endset %}
+    {% if n.link_url and not n.is_read %}
+    <form method="post" action="{{ url_for('notifications.mark_read', id=n.id) }}" class="list-group-item p-0 bg-body-secondary">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn w-100 text-start p-3 border-0 bg-transparent text-reset text-decoration-none rounded-0">
+        {{ body }}
+      </button>
+    </form>
+    {% elif n.link_url %}
+    <a href="{{ n.link_url }}" class="list-group-item list-group-item-action p-3 text-reset text-decoration-none">
+      {{ body }}
+    </a>
+    {% else %}
+    <div class="list-group-item p-3 {{ 'bg-body-secondary' if not n.is_read }}">
+      {{ body }}
+      {% if not n.is_read %}
+      <form method="post" action="{{ url_for('notifications.mark_read', id=n.id) }}" class="mt-2">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button class="btn btn-sm btn-outline-secondary">Mark read</button>
       </form>
       {% endif %}
     </div>
+    {% endif %}
     {% else %}
     <div class="list-group-item text-center text-muted py-4">No notifications.</div>
     {% endfor %}

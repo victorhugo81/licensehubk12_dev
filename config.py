@@ -100,6 +100,14 @@ class Config:
     CANVAS_BASE_URL = os.environ.get("CANVAS_BASE_URL")
     CANVAS_API_TOKEN = os.environ.get("CANVAS_API_TOKEN")
 
+    # Opt-in in-process APScheduler job that runs the expiration/utilization/
+    # renewal checks (app/services/checks.py) once a day - see
+    # app/services/scheduler.py. Off by default: without it (and without an
+    # external cron driving `flask run-checks`), notifications only reflect
+    # whatever the last manual/scheduled run saw, however stale that is. Run
+    # only one worker process when this is on, to avoid duplicate runs.
+    SCHEDULER_ENABLED = _bool("SCHEDULER_ENABLED", False)
+
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
 
@@ -124,6 +132,11 @@ class TestingConfig(Config):
     REMEMBER_COOKIE_SECURE = False
     RATELIMIT_ENABLED = False
     SECRET_KEY = Config.SECRET_KEY or "testing-secret-key"
+    # Always off regardless of the environment's SCHEDULER_ENABLED - the
+    # scheduler is a module-level singleton (app/services/scheduler.py), so
+    # starting it once per test-created app would register duplicate/
+    # conflicting jobs across the suite.
+    SCHEDULER_ENABLED = False
 
 
 class ProductionConfig(Config):

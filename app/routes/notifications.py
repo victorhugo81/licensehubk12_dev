@@ -28,7 +28,10 @@ def mark_read(id):
     note = visible_to(current_user, Notification.query.filter_by(id=id)).first_or_404()
     note.is_read = True
     db.session.commit()
-    return redirect(request.referrer or url_for("notifications.index"))
+    # Clicking an unread notification both marks it read and takes you to
+    # whatever it's about (the license/contract) - falls back to wherever
+    # the request came from if it has no navigable related object.
+    return redirect(note.link_url or request.referrer or url_for("notifications.index"))
 
 
 @notifications_bp.route("/mark-all-read", methods=["POST"])

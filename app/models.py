@@ -79,6 +79,13 @@ class Setting(db.Model):
             return default
 
     @staticmethod
+    def get_bool(key, default):
+        row = Setting.query.filter_by(key=key).first()
+        if row is None:
+            return default
+        return row.value.strip().lower() in {"1", "true", "yes", "on"}
+
+    @staticmethod
     def set_value(key, value):
         row = Setting.query.filter_by(key=key).first()
         if row is None:
@@ -378,6 +385,7 @@ class Notification(db.Model):
     TYPES = [
         "license_expiration", "contract_expiration", "renewal_deadline",
         "high_utilization", "over_allocated", "unused_licenses", "license_expired",
+        "license_added",
     ]
     SEVERITIES = ["critical", "warning", "info"]
 
@@ -394,6 +402,17 @@ class Notification(db.Model):
 
     is_read = db.Column(db.Boolean, default=False, nullable=False, index=True)
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False, index=True)
+
+    @property
+    def link_url(self):
+        """Where clicking this notification should go, or None if it has
+        no navigable related object (or that object no longer exists)."""
+        from flask import url_for
+        if self.related_object_type == "license" and self.related_object_id:
+            return url_for("licenses.view_license", id=self.related_object_id)
+        if self.related_object_type == "contract" and self.related_object_id:
+            return url_for("contracts.view_contract", id=self.related_object_id)
+        return None
 
     def __repr__(self):
         return f"<Notification {self.type} {self.title}>"
