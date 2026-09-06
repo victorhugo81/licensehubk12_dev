@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Import Complete - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Import Complete</h1>
+
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-4"><div class="stat-tile"><div class="stat-value text-success">{{ results | length }}</div><div class="stat-label">Users Created</div></div></div>
+  <div class="col-6 col-md-4"><div class="stat-tile"><div class="stat-value" style="color: var(--status-warning);">{{ skipped }}</div><div class="stat-label">Skipped (already existed)</div></div></div>
+</div>
+
+{% if results %}
+<div class="alert alert-info">
+  Each new account was created with a random password nobody knows. Share the set-password link below with each
+  person so they can choose their own password - the link expires in 7 days.
+</div>
+<div class="card mb-3">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Set-password link</th></tr></thead>
+      <tbody>
+        {% for r in results %}
+        <tr>
+          <td>{{ r.full_name }}</td>
+          <td>{{ r.email }}</td>
+          <td>{{ r.role }}</td>
+          <td><code class="small">{{ url_for('auth.reset_password', token=r.reset_token) }}</code></td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<a href="{{ url_for('users.list_users') }}" class="btn btn-primary">Go to Users</a>
+<a href="{{ url_for('user_imports.upload') }}" class="btn btn-outline-secondary">Import more</a>
+{% endblock %}

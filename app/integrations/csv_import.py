@@ -21,6 +21,12 @@ from app.services import allocation as allocation_service
 
 REQUIRED_COLUMNS = ["license", "vendor", "school", "total_licenses", "assigned_licenses", "expiration_date", "annual_cost"]
 
+# MAX_CONTENT_LENGTH already caps upload size, but a small file can still
+# pack a huge number of rows; this bounds the per-row and cross-row
+# validation work regardless of file size (CWE-400, uncontrolled resource
+# consumption).
+MAX_ROWS = 20_000
+
 
 @dataclass
 class RowResult:
@@ -95,6 +101,12 @@ def validate_csv(file_stream) -> ImportPreview:
     if missing:
         return ImportPreview(rows=[], total=0, valid=0, warnings=0, errors=0,
                               column_errors=[f"Missing required column(s): {', '.join(missing)}"])
+
+    raw_rows = list(reader)
+    if len(raw_rows) > MAX_ROWS:
+        return ImportPreview(rows=[], total=0, valid=0, warnings=0, errors=0,
+                              column_errors=[f"This file has {len(raw_rows)} rows; the limit is {MAX_ROWS:,} per import. Split it into smaller files."])
+    reader = raw_rows
 
     existing_schools = {s.name.strip().lower(): s for s in School.query.all()}
     existing_licenses = {lic.name.strip().lower(): lic for lic in License.query.all()}

@@ -5,12 +5,19 @@ from logging.handlers import RotatingFileHandler
 from flask import Flask, render_template, request
 
 from config import get_config
-from app.extensions import csrf, db, limiter, login_manager, migrate
+from app.extensions import csrf, db, limiter, login_manager, mail, migrate
 
 
 def create_app(config_name=None):
     app = Flask(__name__, instance_relative_config=True)
     app.config.from_object(get_config(config_name))
+
+    if app.config.get("BEHIND_PROXY"):
+        from werkzeug.middleware.proxy_fix import ProxyFix
+        # Trust exactly one hop (the reverse proxy) for client IP/proto/host -
+        # trusting more than the real proxy chain lets a client spoof
+        # X-Forwarded-For and defeat rate limiting / audit-log IPs entirely.
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
 
     os.makedirs(app.instance_path, exist_ok=True)
     os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
@@ -18,6 +25,7 @@ def create_app(config_name=None):
     _init_extensions(app)
     _register_blueprints(app)
     _register_error_handlers(app)
+    _register_security_headers(app)
     _register_cli(app)
     _register_context_processors(app)
     _configure_logging(app)
@@ -41,12 +49,24 @@ def _init_extensions(app):
     login_manager.init_app(app)
     csrf.init_app(app)
     limiter.init_app(app)
+    mail.init_app(app)
 
     from app.models import User
 
     @login_manager.user_loader
     def load_user(user_id):
-        return db.session.get(User, int(user_id))
+        # user_id is "<id>.<security_stamp>" (User.get_id()) - a stamp
+        # mismatch means the password was changed/reset since this session
+        # cookie was issued, so treat it as logged out rather than trusting
+        # a stale, already-revoked session (see User.security_stamp).
+        raw_id, _, stamp = user_id.partition(".")
+        try:
+            user = db.session.get(User, int(raw_id))
+        except ValueError:
+            return None
+        if user is None or user.security_stamp != stamp:
+            return None
+        return user
 
 
 def _register_blueprints(app):
@@ -63,6 +83,7 @@ def _register_blueprints(app):
     from app.routes.notifications import notifications_bp
     from app.routes.audit import audit_bp
     from app.routes.imports import imports_bp
+    from app.routes.user_imports import user_imports_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -76,6 +97,7 @@ def _register_blueprints(app):
     app.register_blueprint(notifications_bp)
     app.register_blueprint(audit_bp)
     app.register_blueprint(imports_bp)
+    app.register_blueprint(user_imports_bp)
 
     app.register_blueprint(api_bp)
 
@@ -108,6 +130,43 @@ def _register_error_handlers(app):
         _db.session.rollback()
         app.logger.exception("Unhandled server error on %s", request.path)
         return render_error(500)
+
+
+def _register_security_headers(app):
+    import secrets as _secrets
+    from flask import g
+
+    @app.before_request
+    def _make_csp_nonce():
+        g.csp_nonce = _secrets.token_urlsafe(16)
+
+    @app.context_processor
+    def _inject_csp_nonce():
+        return {"csp_nonce": g.get("csp_nonce", "")}
+
+    @app.after_request
+    def _set_security_headers(resp):
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["X-Content-Type-Options"] = "nosniff"
+        resp.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        resp.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+        if app.config.get("SESSION_COOKIE_SECURE"):
+            resp.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+        nonce = g.get("csp_nonce", "")
+        resp.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            f"script-src 'self' 'nonce-{nonce}' https://cdn.jsdelivr.net; "
+            # Every template in this app styles elements with inline
+            # style="..." attributes (status badges, chart sizing, etc.) -
+            # 'unsafe-inline' here is a deliberate, scoped tradeoff; script-src
+            # above uses a real per-request nonce instead, since script
+            # injection is the higher-value target to lock down.
+            "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
+            "font-src 'self' https://cdn.jsdelivr.net; "
+            "img-src 'self' data:; "
+            "frame-ancestors 'none'"
+        )
+        return resp
 
 
 def _register_cli(app):

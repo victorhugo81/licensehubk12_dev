@@ -1,4 +1,5 @@
 import json
+import secrets
 from datetime import datetime, date, timezone
 
 from flask_login import UserMixin
@@ -118,11 +119,23 @@ class User(UserMixin, db.Model):
     reset_token = db.Column(db.String(255), unique=True, nullable=True)
     reset_token_expires = db.Column(db.DateTime, nullable=True)
 
+    # Rotated every time the password changes (see set_password) so that
+    # get_id() below changes too - any session cookie signed with the old
+    # value then fails load_user()'s comparison and is treated as logged
+    # out. Without this, Flask-Login's stateless signed-cookie sessions
+    # have no server-side revocation: resetting a password after a stolen
+    # session/device does nothing to the attacker's already-issued cookie.
+    security_stamp = db.Column(db.String(32), default=lambda: secrets.token_hex(16), nullable=False)
+
     def set_password(self, password: str):
         self.password_hash = generate_password_hash(password)
+        self.security_stamp = secrets.token_hex(16)
 
     def check_password(self, password: str) -> bool:
         return check_password_hash(self.password_hash, password)
+
+    def get_id(self):
+        return f"{self.id}.{self.security_stamp}"
 
     @property
     def full_name(self):
@@ -421,6 +434,10 @@ class ImportHistory(db.Model):
     __tablename__ = "import_history"
 
     id = db.Column(db.Integer, primary_key=True)
+    # "license" (CSV license/allocation import) or "user" (bulk user import,
+    # manual CSV or FTP-pulled) - one history table, discriminated by kind,
+    # rather than a near-duplicate table per import type.
+    kind = db.Column(db.String(20), default="license", nullable=False)
     filename = db.Column(db.String(255), nullable=False)
     imported_by_id = db.Column(db.Integer, db.ForeignKey("users.id"))
     imported_at = db.Column(db.DateTime, default=utcnow, nullable=False)
@@ -450,3 +467,47 @@ class ImportHistory(db.Model):
 
     def __repr__(self):
         return f"<ImportHistory {self.filename}>"
+
+
+class FtpImportSettings(db.Model):
+    """Single-row configuration for the optional scheduled FTP user import
+    (app/integrations/ftp_users.py). There is at most one row (id=1);
+    get_or_create() is the only way callers should fetch/create it.
+    password_encrypted is never stored or logged in plaintext - use the
+    password property (app/utils/crypto.py) to set/read it."""
+    __tablename__ = "ftp_import_settings"
+
+    id = db.Column(db.Integer, primary_key=True)
+    is_enabled = db.Column(db.Boolean, default=False, nullable=False)
+    host = db.Column(db.String(255))
+    port = db.Column(db.Integer, default=21, nullable=False)
+    username = db.Column(db.String(255))
+    password_encrypted = db.Column(db.Text)
+    remote_path = db.Column(db.String(500))
+    use_tls = db.Column(db.Boolean, default=True, nullable=False)
+
+    last_run_at = db.Column(db.DateTime)
+    last_status = db.Column(db.String(20))  # success | error
+    last_message = db.Column(db.Text)
+
+    @property
+    def password(self):
+        from app.utils.crypto import decrypt_value
+        return decrypt_value(self.password_encrypted or "")
+
+    @password.setter
+    def password(self, value):
+        from app.utils.crypto import encrypt_value
+        self.password_encrypted = encrypt_value(value or "")
+
+    def is_configured(self) -> bool:
+        return bool(self.is_enabled and self.host and self.username and self.password and self.remote_path)
+
+    @staticmethod
+    def get_or_create():
+        row = FtpImportSettings.query.get(1)
+        if row is None:
+            row = FtpImportSettings(id=1)
+            db.session.add(row)
+            db.session.flush()
+        return row

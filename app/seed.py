@@ -25,6 +25,16 @@ def _get_or_create(model, defaults=None, **kwargs):
 
 def run_seed():
     # Assumes `flask db upgrade` has already created the schema.
+    from flask import current_app
+
+    if current_app.config.get("ENV_NAME") == "production":
+        raise RuntimeError(
+            "flask seed creates fictional demo accounts with a well-known "
+            "password (see README) and must never run against production. "
+            "Use `python installation/seed_data.py` for a real district "
+            "instance instead - it prompts for a real admin password."
+        )
+
 
     # Roles
     for name in Role.ALL:

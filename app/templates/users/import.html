@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Import Users - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Import Users from CSV</h1>
+  <a href="{{ url_for('users.list_users') }}" class="small"><i class="bi bi-arrow-left"></i> Back to Users</a>
+</div>
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Upload file</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.file.label(class="form-label") }}
+            {{ form.file(class="form-control") }}
+            {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          {{ form.submit(class="btn btn-primary") }}
+          <a href="{{ url_for('static', filename='download/user_import_template.csv') }}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> Download template</a>
+        </form>
+        <div class="d-flex gap-3 mt-3">
+          <a href="{{ url_for('user_imports.history') }}" class="small">View import history</a>
+          <a href="{{ url_for('user_imports.ftp_settings') }}" class="small">Configure FTP import</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Expected columns</div>
+      <div class="card-body">
+        <p class="small text-muted">The CSV must include these columns (header row required):</p>
+        <pre class="bg-body-secondary p-2 rounded small">first_name,last_name,email,role,school
+Jane,Doe,jane.doe@example.org,Viewer,
+John,Smith,john.smith@example.org,School Administrator,Calexico High School</pre>
+        <p class="small text-muted mb-0">
+          <code>school</code> is only required when <code>role</code> is School Administrator. Every row is validated
+          before anything is written to the database. Rows with errors are never imported. New accounts get a random
+          password nobody is shown - each one receives a password-set link (shown after import) instead of a temporary
+          password.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,6 +1,6 @@
 import io
 
-from app.integrations.csv_import import commit_import, validate_csv
+from app.integrations.csv_import import MAX_ROWS, commit_import, validate_csv
 from app.models import License, LicenseAllocation, School
 
 
@@ -100,3 +100,12 @@ def test_expired_date_in_past_is_a_warning_not_error(db):
     preview = validate_csv(io.StringIO(csv_text))
     assert preview.warnings == 1
     assert preview.errors == 0
+
+
+def test_row_count_over_the_limit_is_rejected(db):
+    header = "license,vendor,school,total_licenses,assigned_licenses,expiration_date,annual_cost\n"
+    row = "App,Vendor A,School A,10,5,2027-06-30,100\n"
+    csv_text = header + row * (MAX_ROWS + 1)
+    preview = validate_csv(io.StringIO(csv_text))
+    assert preview.column_errors
+    assert preview.total == 0

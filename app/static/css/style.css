@@ -416,4 +416,7 @@ a { color: var(--bs-main-color-secondary); }
 .accordion { border: .4px solid var(--input-color-border);  border-radius: var(--radius-md); overflow: hidden; }
 .accordion .accordion-item { border: .4px solid var(--input-color-border); }
 
-    
+.btn-primary {
+  background: var(--bs-main-color-primary);
+  border-color: var(--bs-main-color-primary);
+}

@@ -24,4 +24,13 @@ def init_scheduler(app):
         with app.app_context():
             run_all_checks()
 
+    @scheduler.task("cron", id="run_ftp_user_import", hour=5, minute=30)
+    def run_ftp_user_import():
+        from app.integrations.ftp_users import FtpUsersIntegration
+        from app.models import FtpImportSettings
+        with app.app_context():
+            settings = FtpImportSettings.get_or_create()
+            if settings.is_configured():
+                FtpUsersIntegration(settings).sync()
+
     scheduler.start()

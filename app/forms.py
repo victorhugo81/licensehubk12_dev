@@ -9,6 +9,24 @@ from wtforms.widgets import CheckboxInput
 
 from app.models import Contract, License, Role, School
 
+# A small sample of the passwords that appear at the top of every public
+# breach-password list. Checking length alone (the app's other password
+# rule) still lets "aaaaaaaaaa" or "password123" through - per NIST 800-63B,
+# rejecting known-breached/common passwords is more effective than
+# composition rules (requiring symbols etc.), so this targets exactly that
+# rather than adding uppercase/digit/symbol requirements.
+_COMMON_PASSWORDS = {
+    "password", "password1", "password123", "123456789", "1234567890",
+    "qwertyuiop", "letmein123", "welcome123", "admin12345", "changeme",
+    "changeme1", "iloveyou12", "sunshine12", "princess12", "football12",
+    "baseball12", "dragon1234", "master1234", "superman12", "trustno1234",
+}
+
+
+def not_common_password(form, field):
+    if field.data and field.data.strip().lower() in _COMMON_PASSWORDS:
+        raise ValidationError("That password is too common. Choose something less guessable.")
+
 
 class GradesField(SelectMultipleField):
     """Renders as a checkbox per grade; stored on the model as a single
@@ -36,7 +54,7 @@ class RequestResetForm(FlaskForm):
 
 
 class ResetPasswordForm(FlaskForm):
-    password = PasswordField("New password", validators=[DataRequired(), Length(min=10)])
+    password = PasswordField("New password", validators=[DataRequired(), Length(min=10), not_common_password])
     confirm_password = PasswordField(
         "Confirm password", validators=[DataRequired(), EqualTo("password", message="Passwords must match.")]
     )
@@ -45,7 +63,7 @@ class ResetPasswordForm(FlaskForm):
 
 class ChangePasswordForm(FlaskForm):
     current_password = PasswordField("Current password", validators=[DataRequired()])
-    password = PasswordField("New password", validators=[DataRequired(), Length(min=10)])
+    password = PasswordField("New password", validators=[DataRequired(), Length(min=10), not_common_password])
     confirm_password = PasswordField(
         "Confirm password", validators=[DataRequired(), EqualTo("password", message="Passwords must match.")]
     )
@@ -59,7 +77,7 @@ class UserForm(FlaskForm):
     role_id = SelectField("Role", coerce=int, validators=[DataRequired()])
     school_id = SelectField("School (School Administrator only)", coerce=int, validators=[Optional()])
     is_active_account = BooleanField("Account active", default=True)
-    password = PasswordField("Password", validators=[Optional(), Length(min=10)])
+    password = PasswordField("Password", validators=[Optional(), Length(min=10), not_common_password])
     submit = SubmitField("Save user")
 
     def __init__(self, *args, **kwargs):
@@ -161,6 +179,20 @@ class ContractForm(FlaskForm):
 class CsvImportForm(FlaskForm):
     file = FileField("CSV file", validators=[FileRequired(), FileAllowed(["csv"], "CSV files only.")])
     submit = SubmitField("Preview import")
+
+
+class FtpSettingsForm(FlaskForm):
+    is_enabled = BooleanField("Enable scheduled FTP import")
+    host = StringField("Host", validators=[DataRequired(), Length(max=255)])
+    port = IntegerField("Port", validators=[DataRequired(), NumberRange(min=1, max=65535)], default=21)
+    username = StringField("Username", validators=[DataRequired(), Length(max=255)])
+    password = PasswordField(
+        "Password", validators=[Optional()],
+        description="Leave blank to keep the currently stored password.",
+    )
+    remote_path = StringField("Remote file path", validators=[DataRequired(), Length(max=500)])
+    use_tls = BooleanField("Use FTPS (TLS)", default=True)
+    submit = SubmitField("Save FTP settings")
 
 
 class SettingsForm(FlaskForm):

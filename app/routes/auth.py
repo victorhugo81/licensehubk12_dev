@@ -1,18 +1,46 @@
 import secrets
 from datetime import timedelta
+from urllib.parse import urlparse
 
 from flask import Blueprint, flash, redirect, render_template, request, session, url_for
 from flask_login import current_user, login_required, login_user, logout_user
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app.extensions import db, limiter
 from app.forms import ChangePasswordForm, LoginForm, RequestResetForm, ResetPasswordForm
 from app.models import User, utcnow
 from app.services.audit import log_action
+from app.services.mailer import send_password_reset_email
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/auth")
 
 MAX_FAILED_ATTEMPTS = 5
 LOCKOUT_MINUTES = 15
+
+# Hashed once at import time and checked whenever the submitted email
+# doesn't match any user, so a nonexistent-email login costs roughly the
+# same wall-clock time as a wrong-password one - otherwise the two cases
+# are distinguishable by response time (CWE-203, timing-based user
+# enumeration).
+_DUMMY_PASSWORD_HASH = generate_password_hash(secrets.token_urlsafe(32))
+
+_GENERIC_LOGIN_ERROR = "Invalid email or password."
+
+
+def _safe_next_url():
+    """Only ever redirect to a same-site, relative path. `next_url.startswith("/")`
+    alone would also match "//evil.com" (and "/\\evil.com"), which browsers
+    resolve as a scheme-relative URL to a different host - a classic open
+    redirect (CWE-601)."""
+    next_url = request.args.get("next")
+    if not next_url:
+        return None
+    parsed = urlparse(next_url)
+    if parsed.scheme or parsed.netloc:
+        return None
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return None
+    return next_url
 
 
 @auth_bp.route("/login", methods=["GET", "POST"])
@@ -25,11 +53,19 @@ def login():
     if form.validate_on_submit():
         user = User.query.filter(db.func.lower(User.email) == form.email.data.strip().lower()).first()
 
-        if user and user.is_locked():
-            flash("This account is temporarily locked due to repeated failed sign-in attempts. Try again later.", "danger")
-            return render_template("login.html", form=form)
+        # Locked-out and unknown-email cases both fall through to the same
+        # generic message below, and every branch performs exactly one
+        # password-hash comparison (real or dummy) - a distinct message or a
+        # skipped hash check for any case would let a submitter distinguish
+        # "no such account" / "locked" / "wrong password" from each other,
+        # either directly or via response-time (CWE-203, user enumeration).
+        if user and not user.is_locked():
+            password_ok = user.check_password(form.password.data)
+        else:
+            check_password_hash(_DUMMY_PASSWORD_HASH, form.password.data)
+            password_ok = False
 
-        if user and user.is_active_account and user.check_password(form.password.data):
+        if user and not user.is_locked() and user.is_active_account and password_ok:
             user.failed_login_attempts = 0
             user.locked_until = None
             user.last_login_at = utcnow()
@@ -40,19 +76,15 @@ def login():
             log_action("login", "user", user.id)
             db.session.commit()
 
-            next_url = request.args.get("next")
-            if next_url and next_url.startswith("/"):
-                return redirect(next_url)
-            return redirect(url_for("dashboard.index"))
+            return redirect(_safe_next_url() or url_for("dashboard.index"))
 
-        if user:
+        if user and not user.is_locked():
             user.failed_login_attempts = (user.failed_login_attempts or 0) + 1
             if user.failed_login_attempts >= MAX_FAILED_ATTEMPTS:
                 user.locked_until = utcnow() + timedelta(minutes=LOCKOUT_MINUTES)
-                flash("Too many failed attempts. This account is locked for 15 minutes.", "danger")
             db.session.commit()
 
-        flash("Invalid email or password.", "danger")
+        flash(_GENERIC_LOGIN_ERROR, "danger")
 
     return render_template("login.html", form=form)
 
@@ -80,12 +112,8 @@ def request_reset():
             user.reset_token = secrets.token_urlsafe(48)
             user.reset_token_expires = utcnow() + timedelta(hours=1)
             db.session.commit()
-            # In production this link is emailed via Flask-Mail; logged
-            # here so the flow is testable without an SMTP server.
-            from flask import current_app
-            current_app.logger.info(
-                "Password reset link for %s: /auth/reset-password/%s", user.email, user.reset_token
-            )
+            reset_url = url_for("auth.reset_password", token=user.reset_token, _external=True)
+            send_password_reset_email(user, reset_url)
         # Always show the same message, whether or not the email exists,
         # so this endpoint can't be used to enumerate accounts.
         flash("If that email is registered, a reset link has been sent.", "info")

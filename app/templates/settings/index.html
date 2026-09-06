@@ -20,4 +20,16 @@
     </form>
   </div>
 </div>
+
+<div class="card mt-3">
+  <div class="card-header">Bulk User Import</div>
+  <div class="card-body">
+    <p class="text-muted small">Create many user accounts at once from a CSV file, or configure an automated daily import over FTP/FTPS.</p>
+    <div class="d-flex gap-2">
+      <a href="{{ url_for('user_imports.upload') }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import CSV</a>
+      <a href="{{ url_for('user_imports.ftp_settings') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> FTP Import Settings</a>
+      <a href="{{ url_for('user_imports.history') }}" class="btn btn-outline-secondary"><i class="bi bi-clock-history"></i> Import History</a>
+    </div>
+  </div>
+</div>
 {% endblock %}

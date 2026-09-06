@@ -3,6 +3,7 @@ import pytest
 from app import create_app
 from app.extensions import db as _db
 from app.models import Role
+from tests.conftest import login
 
 
 @pytest.fixture()
@@ -68,3 +69,64 @@ def test_api_write_without_csrf_token_is_rejected(csrf_app):
     assert resp.status_code in (400, 403)
     from app.models import License
     assert License.query.filter_by(name="Blocked").first() is None
+
+
+def test_security_headers_present_on_every_response(client):
+    resp = client.get("/auth/login")
+    assert resp.headers["X-Frame-Options"] == "DENY"
+    assert resp.headers["X-Content-Type-Options"] == "nosniff"
+    assert resp.headers["Referrer-Policy"] == "strict-origin-when-cross-origin"
+    assert "Content-Security-Policy" in resp.headers
+    assert "frame-ancestors 'none'" in resp.headers["Content-Security-Policy"]
+
+
+def test_csp_script_nonce_is_unique_per_request(client, admin_user):
+    login(client, "admin@example.com")
+    resp1 = client.get("/")
+    resp2 = client.get("/")
+    nonce1 = resp1.headers["Content-Security-Policy"].split("nonce-")[1].split("'")[0]
+    nonce2 = resp2.headers["Content-Security-Policy"].split("nonce-")[1].split("'")[0]
+    assert nonce1 != nonce2
+    assert f'nonce="{nonce1}"' in resp1.get_data(as_text=True)
+
+
+def test_get_config_refuses_to_default_to_development(monkeypatch):
+    monkeypatch.delenv("APP_ENV", raising=False)
+    from config import get_config
+    with pytest.raises(RuntimeError):
+        get_config(None)
+
+
+def test_get_config_rejects_unknown_environment():
+    from config import get_config
+    with pytest.raises(RuntimeError):
+        get_config("staging")
+
+
+def test_seed_refuses_to_run_against_production():
+    prod_app = create_app("production")
+    with prod_app.app_context():
+        from app.seed import run_seed
+        with pytest.raises(RuntimeError):
+            run_seed()
+
+
+def test_common_password_rejected_on_reset(csrf_app):
+    import re
+    from app.models import User
+    with csrf_app.app_context():
+        user = User.query.filter_by(email="admin@example.com").first()
+        user.reset_token = "test-reset-token"
+        from app.models import utcnow
+        from datetime import timedelta
+        user.reset_token_expires = utcnow() + timedelta(hours=1)
+        _db.session.commit()
+
+    client = csrf_app.test_client()
+    page = client.get("/auth/reset-password/test-reset-token")
+    token = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', page.get_data(as_text=True)).group(1)
+    resp = client.post(
+        "/auth/reset-password/test-reset-token",
+        data={"password": "password123", "confirm_password": "password123", "csrf_token": token},
+    )
+    assert b"too common" in resp.data.lower()

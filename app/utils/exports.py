@@ -8,12 +8,31 @@ from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet
 
+# Cell values that start with any of these are interpreted as formulas by
+# Excel/Sheets/LibreOffice, not literal text - a free-text field an
+# attacker controls (vendor name, license notes, ...) could smuggle in a
+# formula (e.g. a HYPERLINK() exfiltrating other cells, or a legacy DDE
+# payload) that runs when an Administrator later opens an exported report
+# (CWE-1236, CSV/Formula Injection). Prefixing with a single quote forces
+# every spreadsheet application to treat the cell as plain text.
+_FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
+
+
+def _sanitize_cell(value):
+    if isinstance(value, str) and value[:1] in _FORMULA_PREFIXES:
+        return "'" + value
+    return value
+
+
+def _sanitize_row(row):
+    return [_sanitize_cell(cell) for cell in row]
+
 
 def export_csv(filename: str, headers: list[str], rows: list[list]) -> Response:
     buffer = io.StringIO()
     writer = csv.writer(buffer)
     writer.writerow(headers)
-    writer.writerows(rows)
+    writer.writerows(_sanitize_row(row) for row in rows)
     output = buffer.getvalue()
     return Response(
         output,
@@ -28,7 +47,7 @@ def export_excel(filename: str, headers: list[str], rows: list[list]) -> Respons
     ws.title = filename[:31]
     ws.append(headers)
     for row in rows:
-        ws.append(row)
+        ws.append(_sanitize_row(row))
     for col_cells in ws.columns:
         length = max((len(str(c.value)) for c in col_cells if c.value is not None), default=10)
         ws.column_dimensions[col_cells[0].column_letter].width = min(length + 2, 40)

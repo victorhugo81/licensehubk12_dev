@@ -107,23 +107,32 @@ uv run pytest                    # test suite
 
 ## Production deployment notes
 
-- Set `FLASK_ENV=production` (or otherwise select `ProductionConfig`) so `DEBUG` is off, cookies are marked `Secure`, and error pages never leak stack traces.
+- Set `APP_ENV=production` so `ProductionConfig` is selected (`DEBUG` off, cookies marked `Secure`, error pages never leak stack traces). The app now refuses to start if `APP_ENV` is unset, or if `production` is selected without a `SECRET_KEY` - it will not silently fall back to development settings.
+- Set `BEHIND_PROXY=true` if serving behind nginx/another reverse proxy (the documented setup below) so `ProxyFix` reads the real client IP from `X-Forwarded-*` headers - without it, rate limiting and audit-log IP addresses only ever see the proxy's own address.
 - Point `DATABASE_URL` at MySQL/MariaDB and run `flask db upgrade` against it before first launch.
 - Serve behind a WSGI server (`gunicorn` is already a dependency): `uv run gunicorn -w 4 -b 0.0.0.0:8000 run:app`.
 - Put a reverse proxy (nginx, etc.) in front for TLS termination and static file caching.
 - Logs are written to rotating files under `instance/logs/` — ship these to your log aggregator of choice.
 - If using the optional in-process scheduler, run only one worker with `SCHEDULER_ENABLED=True` to avoid duplicate notification runs; otherwise drive `flask run-checks` from an external scheduler.
+- If running more than one gunicorn worker (`-w > 1`), point `RATELIMIT_STORAGE_URI` at a shared store (e.g. `redis://host:6379/0`) instead of the default `memory://` — each worker enforces rate limits independently otherwise, multiplying every limit (including login brute-force protection) by the worker count. `redis` is already a project dependency for this.
+- Set `MAIL_SERVER`/`MAIL_USERNAME`/`MAIL_PASSWORD`/`MAIL_DEFAULT_SENDER` so password-reset links are actually emailed (`app/services/mailer.py`); without it, resets fall back to an admin-visible log line that never includes the token itself.
 
 ## Security considerations
 
-- Passwords are hashed with Werkzeug's `generate_password_hash` (PBKDF2/scrypt) — never stored or logged in plaintext.
+- Passwords are hashed with Werkzeug's `generate_password_hash` (PBKDF2/scrypt) — never stored or logged in plaintext. New/changed passwords are also checked against a short list of common/breached passwords (`app/forms.py::not_common_password`).
 - CSRF protection is enabled globally (Flask-WTF `CSRFProtect`); every form includes a token.
 - RBAC is enforced at the route-decorator level (`app/utils/decorators.py`), not just by hiding UI — verified directly in `tests/test_rbac.py`.
 - The JSON API authenticates via the same session cookie as the rest of the app and is subject to standard CSRF protection, so a state-changing request needs an authenticated same-origin session with a valid CSRF token — it isn't reachable as a bare external API.
-- Login is rate-limited and accounts lock temporarily after repeated failed attempts.
-- CSV imports are validated field-by-field before any database write; invalid rows are never imported, and uploaded files are never trusted for their filename or extension.
+- Login is rate-limited and accounts lock temporarily after repeated failed attempts; the lockout message is identical to a normal failed login (no distinct "this account is locked" text) and every failed attempt costs one password-hash comparison (real or dummy), so neither the message nor response time reveals whether an email is registered.
+- The post-login `?next=` redirect only ever follows a same-site relative path — protocol-relative URLs (`//evil.example`) are rejected, not just anything starting with `/`.
+- Changing or resetting a password rotates `User.security_stamp`, which is embedded in the session id (`User.get_id()`) - any other already-issued session cookie for that account stops working immediately, closing the "someone has my session, so I reset my password" gap that stateless signed-cookie sessions otherwise leave open.
+- Every response carries `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`, a `Content-Security-Policy` (script tags use a fresh per-request nonce, not `unsafe-inline`), and `Strict-Transport-Security` when cookies are secure (`app/__init__.py::_register_security_headers`).
+- Deploying behind a reverse proxy requires `BEHIND_PROXY=true` so `ProxyFix` reads the real client IP - without it, per-IP rate limiting and the audit log's IP column only ever see the proxy's own address.
+- CSV imports are validated field-by-field before any database write; invalid rows are never imported, uploaded files are never trusted for their filename or extension, and each import is capped at 20,000 rows regardless of file size.
+- CSV/Excel report exports neutralize any cell that starts with `=`, `+`, `-`, `@`, a tab, or a carriage return (`app/utils/exports.py`), preventing formula/DDE injection when a report is later opened in Excel/Sheets.
 - All database access goes through the SQLAlchemy ORM — no raw SQL string interpolation.
 - Every create/update/delete is written to the audit log with a field-level diff, the acting user, and their IP address.
+- `flask seed` (fictional demo data with a well-known password) refuses to run against `APP_ENV=production`; use `python installation/seed_data.py` for a real district instance.
 
 ## Project layout
 
