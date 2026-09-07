@@ -7,6 +7,11 @@ from flask import Flask, render_template, request
 from config import get_config
 from app.extensions import csrf, db, limiter, login_manager, mail, migrate
 
+# Single source of truth for the version shown in the About modal
+# (includes/footer.html) - keep in sync with the latest entry in
+# CHANGELOG.md and with pyproject.toml's [project] version.
+APP_VERSION = "1.0.0"
+
 
 def create_app(config_name=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -191,12 +196,18 @@ def _register_context_processors(app):
     @app.context_processor
     def inject_globals():
         from flask_login import current_user
+        from app.models import utcnow
         from app.services.notifications import unread_count
 
         count = 0
         if current_user and current_user.is_authenticated:
             count = unread_count(current_user)
-        return {"unread_notification_count": count, "app_name": "LicenseHubK12"}
+        return {
+            "unread_notification_count": count,
+            "app_name": "LicenseHubK12",
+            "app_version": APP_VERSION,
+            "current_year": utcnow().year,
+        }
 
 
 def _configure_logging(app):

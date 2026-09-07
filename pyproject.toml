@@ -1,8 +1,9 @@
 [project]
 name = "licensehubk12"
-version = "0.1.0"
+version = "1.0.0"
 description = "K-12 educational software license management platform"
 readme = "README.md"
+license = "GPL-3.0-or-later"
 requires-python = ">=3.13"
 dependencies = [
     "flask==3.1.3",

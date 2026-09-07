@@ -163,3 +163,11 @@ tests/             pytest suite
 ```
 
 See `CLAUDE.md` for a day-to-day reference on working in this codebase.
+
+## License
+
+GPL-3.0-or-later — see [LICENSE](LICENSE).
+
+## Code of Conduct
+
+This project follows the [Contributor Covenant](CODE_OF_CONDUCT.md).
