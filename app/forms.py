@@ -169,6 +169,10 @@ class ContractForm(FlaskForm):
     auto_renewal = BooleanField("Auto renewal")
     cancellation_deadline = DateField("Cancellation deadline", validators=[Optional()])
     notes = TextAreaField("Notes", validators=[Optional()])
+    contract_file = FileField(
+        "Contract file (PDF or Word)",
+        validators=[Optional(), FileAllowed(["pdf", "doc", "docx"], "PDF or Word documents only.")],
+    )
     submit = SubmitField("Save contract")
 
     def validate_end_date(self, field):

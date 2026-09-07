@@ -1,8 +1,11 @@
+import os
+import secrets
 from datetime import date, timedelta
 
-from flask import Blueprint, abort, flash, redirect, render_template, request, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, send_from_directory, url_for
 from flask_login import login_required
 from sqlalchemy import and_, false, or_
+from werkzeug.utils import secure_filename
 
 from app.extensions import db
 from app.forms import ContractForm
@@ -95,6 +98,39 @@ def _form_data(c):
     }
 
 
+def _contracts_upload_dir():
+    path = os.path.join(current_app.config["UPLOAD_FOLDER"], "contracts")
+    os.makedirs(path, exist_ok=True)
+    return path
+
+
+def _delete_contract_file(contract):
+    if not contract.contract_file_path:
+        return
+    old_path = os.path.join(_contracts_upload_dir(), contract.contract_file_path)
+    if os.path.exists(old_path):
+        os.remove(old_path)
+    contract.contract_file_name = None
+    contract.contract_file_path = None
+
+
+def _save_contract_file(contract, upload_file):
+    """Replaces any previously attached file. Filename on disk is a random
+    token, never derived from the upload - only the original name (kept
+    solely for display/download) ever touches user input."""
+    original_name = secure_filename(upload_file.filename or "contract")
+    ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
+    if ext not in current_app.config["ALLOWED_CONTRACT_FILE_EXTENSIONS"]:
+        return False
+
+    _delete_contract_file(contract)
+    stored_name = f"{secrets.token_hex(16)}.{ext}"
+    upload_file.save(os.path.join(_contracts_upload_dir(), stored_name))
+    contract.contract_file_name = original_name
+    contract.contract_file_path = stored_name
+    return True
+
+
 @contracts_bp.route("/vendors/<int:vendor_id>/contracts/add", methods=["GET", "POST"])
 @login_required
 @permission_required("add_contracts")
@@ -104,6 +140,10 @@ def add_contract(vendor_id):
     if form.validate_on_submit():
         contract = Contract(vendor=vendor)
         form.populate_obj(contract)
+        if form.contract_file.data and form.contract_file.data.filename:
+            if not _save_contract_file(contract, form.contract_file.data):
+                flash("Only PDF or Word documents are allowed for the contract file.", "danger")
+                return render_template("contracts/form.html", form=form, contract=None, vendor=vendor)
         db.session.add(contract)
         db.session.commit()
         log_action("create", "contract", contract.id, {"po_number": contract.po_number, "vendor": vendor.name})
@@ -136,6 +176,10 @@ def edit_contract(vendor_id, id):
     form = ContractForm(obj=contract)
     if form.validate_on_submit():
         form.populate_obj(contract)
+        if form.contract_file.data and form.contract_file.data.filename:
+            if not _save_contract_file(contract, form.contract_file.data):
+                flash("Only PDF or Word documents are allowed for the contract file.", "danger")
+                return render_template("contracts/form.html", form=form, contract=contract, vendor=vendor)
         db.session.commit()
         changes = diff_changes(before, _form_data(contract))
         log_action("update", "contract", contract.id, changes)
@@ -143,6 +187,47 @@ def edit_contract(vendor_id, id):
         flash(f"Contract {contract.po_number} updated.", "success")
         return redirect(url_for("contracts.view_contract", id=contract.id))
     return render_template("contracts/form.html", form=form, contract=contract, vendor=vendor)
+
+
+@contracts_bp.route("/contracts/<int:id>/file")
+@login_required
+def download_file(id):
+    contract = Contract.query.get_or_404(id)
+    if not contract.contract_file_path:
+        abort(404)
+    return send_from_directory(
+        _contracts_upload_dir(), contract.contract_file_path,
+        as_attachment=True, download_name=contract.contract_file_name,
+    )
+
+
+@contracts_bp.route("/contracts/<int:id>/file/preview")
+@login_required
+def preview_file(id):
+    contract = Contract.query.get_or_404(id)
+    if not contract.contract_file_path or not contract.file_is_previewable:
+        abort(404)
+    # as_attachment=False so the browser renders the PDF inline instead of
+    # downloading it - same file, same access rule as download_file above.
+    return send_from_directory(
+        _contracts_upload_dir(), contract.contract_file_path,
+        as_attachment=False, download_name=contract.contract_file_name,
+    )
+
+
+@contracts_bp.route("/vendors/<int:vendor_id>/contracts/<int:id>/file/delete", methods=["POST"])
+@login_required
+@permission_required("manage_contracts")
+def delete_file(vendor_id, id):
+    contract = Contract.query.get_or_404(id)
+    if contract.vendor_id != vendor_id:
+        abort(404)
+    _delete_contract_file(contract)
+    db.session.commit()
+    log_action("update", "contract", contract.id, {"contract_file": {"from": "attached", "to": None}})
+    db.session.commit()
+    flash("Contract file removed.", "success")
+    return redirect(url_for("contracts.view_contract", id=contract.id))
 
 
 @contracts_bp.route("/vendors/<int:vendor_id>/contracts/<int:id>/delete", methods=["POST"])

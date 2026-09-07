@@ -50,6 +50,7 @@ class Config:
     MAX_CONTENT_LENGTH = int(os.environ.get("MAX_CONTENT_LENGTH_MB", 5)) * 1024 * 1024
     UPLOAD_FOLDER = os.path.join(basedir, os.environ.get("UPLOAD_FOLDER", "instance/uploads"))
     ALLOWED_IMPORT_EXTENSIONS = {"csv"}
+    ALLOWED_CONTRACT_FILE_EXTENSIONS = {"pdf", "doc", "docx"}
 
     # Set True when deployed behind exactly one reverse proxy hop (nginx,
     # the documented setup) so ProxyFix reads the real client IP from

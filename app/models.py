@@ -362,6 +362,13 @@ class Contract(db.Model):
     cancellation_deadline = db.Column(db.Date)
     notes = db.Column(db.Text)
 
+    # The uploaded contract document (PDF/Word), if any. file_path is a
+    # server-generated random filename under UPLOAD_FOLDER/contracts/, never
+    # derived from the uploaded filename - file_name is the original name,
+    # kept only for display and as the download's Content-Disposition name.
+    contract_file_name = db.Column(db.String(255))
+    contract_file_path = db.Column(db.String(255))
+
     created_at = db.Column(db.DateTime, default=utcnow, nullable=False)
 
     vendor = db.relationship("Vendor", back_populates="contracts")
@@ -370,6 +377,13 @@ class Contract(db.Model):
     @property
     def days_until_end(self):
         return (self.end_date - date.today()).days
+
+    @property
+    def file_is_previewable(self):
+        # Only PDFs render inline in a browser tab - Word docs would just
+        # trigger a download (or an ugly plugin prompt) regardless of
+        # Content-Disposition, so the "Preview" action only makes sense here.
+        return bool(self.contract_file_name and self.contract_file_name.lower().endswith(".pdf"))
 
     def __repr__(self):
         return f"<Contract {self.po_number}>"

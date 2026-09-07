@@ -5,7 +5,7 @@
 <h1 class="h4 mb-1">{{ 'Edit' if contract else 'Add' }} Contract</h1>
 <p class="text-muted mb-3">{{ vendor.name }}</p>
 <div class="card"><div class="card-body">
-  <form method="post" novalidate>
+  <form method="post" enctype="multipart/form-data" novalidate>
     {{ form.hidden_tag() }}
     <div class="row">
       {{ field(form.po_number, "col-md-6") }}
@@ -18,6 +18,12 @@
       {{ field(form.vendor_contact, "col-md-6") }}
       {{ field(form.auto_renewal, "col-md-6") }}
       {{ field(form.notes, "col-12") }}
+      {{ field(form.contract_file, "col-12") }}
+      {% if contract and contract.contract_file_name %}
+      <div class="col-12">
+        <p class="small text-muted mb-0">Current file: {{ contract.contract_file_name }} — uploading a new one replaces it.</p>
+      </div>
+      {% endif %}
     </div>
     <div class="d-flex gap-2">
       {{ form.submit(class="btn btn-primary") }}

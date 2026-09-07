@@ -41,6 +41,35 @@
 </div>
 
 <div class="card mt-3">
+  <div class="card-header">Contract Document</div>
+  <div class="card-body">
+    {% if contract.contract_file_name %}
+    <div class="d-flex justify-content-between align-items-center">
+      <div><i class="bi bi-file-earmark-text"></i> {{ contract.contract_file_name }}</div>
+      <div class="d-flex gap-2">
+        {% if contract.file_is_previewable %}
+        <a href="{{ url_for('contracts.preview_file', id=contract.id) }}" target="_blank" rel="noopener" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye"></i> Preview</a>
+        {% endif %}
+        <a href="{{ url_for('contracts.download_file', id=contract.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> Download</a>
+        {% if current_user.has_role('Administrator', 'IT Administrator') %}
+        <a href="{{ url_for('contracts.edit_contract', vendor_id=contract.vendor_id, id=contract.id) }}" class="btn btn-sm btn-outline-secondary">Replace</a>
+        <form method="post" action="{{ url_for('contracts.delete_file', vendor_id=contract.vendor_id, id=contract.id) }}" onsubmit="return confirm('Remove the attached contract file?');">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button class="btn btn-sm btn-outline-danger">Remove</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% else %}
+    <p class="text-muted small mb-2">No file attached.</p>
+    {% if current_user.has_role('Administrator', 'IT Administrator') %}
+    <a href="{{ url_for('contracts.edit_contract', vendor_id=contract.vendor_id, id=contract.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-upload"></i> Upload Contract File</a>
+    {% endif %}
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mt-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <span>Licenses</span>
     {% if current_user.has_role('Administrator', 'IT Administrator', 'Curriculum Administrator', 'School Administrator') %}
