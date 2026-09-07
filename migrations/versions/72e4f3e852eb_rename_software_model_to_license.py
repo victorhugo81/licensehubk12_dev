@@ -15,6 +15,7 @@ survives untouched.
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import mysql
+from sqlalchemy import inspect
 
 # revision identifiers, used by Alembic.
 revision = '72e4f3e852eb'
@@ -23,16 +24,41 @@ branch_labels = None
 depends_on = None
 
 
+def _fk_name(bind, table_name, column_name, fallback):
+    """Look up the live name of the FK on column_name, rather than assuming
+    one. These FKs were originally created unnamed (see 9b65b743672a) - MySQL
+    auto-names an unnamed FK 'table_ibfk_N', SQLite leaves it anonymous. A
+    downgrade of this same migration later gives it a concrete name on every
+    dialect (see downgrade() below), so which case applies depends on this
+    migration's own history, not just the current dialect - inspecting the
+    live schema is the only way to get it right in both directions."""
+    for fk in inspect(bind).get_foreign_keys(table_name):
+        if column_name in fk['constrained_columns']:
+            return fk['name'] or fallback
+    return fallback
+
+
 def upgrade():
     bind = op.get_bind()
     is_mysql = bind.dialect.name == "mysql"
 
     # 1. Drop the FKs that point at software.id first, so neither the
     #    table rename nor the column renames below are blocked by them.
-    with op.batch_alter_table('contracts', schema=None) as batch_op:
-        batch_op.drop_constraint('contracts_ibfk_1', type_='foreignkey')
-    with op.batch_alter_table('license_allocations', schema=None) as batch_op:
-        batch_op.drop_constraint('license_allocations_ibfk_2', type_='foreignkey')
+    #    A naming_convention is required so batch mode can address a
+    #    genuinely anonymous constraint (SQLite, fresh install) by a
+    #    generated name; it's ignored for one that already has a real name.
+    naming_convention = {"fk": "fk_%(table_name)s_%(column_0_name)s_%(referred_table_name)s"}
+    contracts_fk = _fk_name(bind, 'contracts', 'software_id', 'fk_contracts_software_id_software')
+    allocations_fk = _fk_name(
+        bind, 'license_allocations', 'software_id', 'fk_license_allocations_software_id_software'
+    )
+
+    with op.batch_alter_table('contracts', schema=None, naming_convention=naming_convention) as batch_op:
+        batch_op.drop_constraint(contracts_fk, type_='foreignkey')
+    with op.batch_alter_table(
+        'license_allocations', schema=None, naming_convention=naming_convention
+    ) as batch_op:
+        batch_op.drop_constraint(allocations_fk, type_='foreignkey')
 
     # 2. Rename the table itself - every existing row keeps its id.
     op.rename_table('software', 'licenses')
@@ -45,10 +71,12 @@ def upgrade():
         batch_op.alter_column('software_id', new_column_name='license_id',
                                existing_type=mysql.INTEGER())
 
-    # 4. Cosmetic: rename indexes/constraints to match, so a future
-    #    `flask db migrate` doesn't propose renaming them anyway.
-    #    MySQL-only syntax (RENAME INDEX) - harmless to skip on other
-    #    dialects since it doesn't affect data or functionality.
+    # 4. Rename indexes/constraints to match, so a future `flask db migrate`
+    #    doesn't propose renaming them anyway - and so later hand-written
+    #    migrations (7a1b4a3359c3, d2ffc64c4d8f) can find them by their new
+    #    names. MySQL supports RENAME INDEX directly; SQLite has no such
+    #    statement, so plain indexes are dropped and recreated under the new
+    #    name instead (cheap - these are small local dev databases).
     if is_mysql:
         op.execute("ALTER TABLE licenses RENAME INDEX ix_software_name TO ix_licenses_name")
         op.execute("ALTER TABLE licenses RENAME INDEX ix_software_status TO ix_licenses_status")
@@ -63,6 +91,19 @@ def upgrade():
             "ALTER TABLE license_allocations "
             "RENAME INDEX uq_allocation_software_school TO uq_allocation_license_school"
         )
+    else:
+        op.drop_index('ix_software_name', table_name='licenses')
+        op.create_index('ix_licenses_name', 'licenses', ['name'])
+        op.drop_index('ix_software_status', table_name='licenses')
+        op.create_index('ix_licenses_status', 'licenses', ['status'])
+        op.drop_index('ix_software_vendor_id', table_name='licenses')
+        op.create_index('ix_licenses_vendor_id', 'licenses', ['vendor_id'])
+        op.drop_index('ix_software_expiration_date', table_name='licenses')
+        op.create_index('ix_licenses_expiration_date', 'licenses', ['expiration_date'])
+        op.drop_index('ix_contracts_software_id', table_name='contracts')
+        op.create_index('ix_contracts_license_id', 'contracts', ['license_id'])
+        op.drop_index('ix_license_allocations_software_id', table_name='license_allocations')
+        op.create_index('ix_license_allocations_license_id', 'license_allocations', ['license_id'])
 
     # 5. Recreate the foreign keys against the renamed table/columns.
     with op.batch_alter_table('contracts', schema=None) as batch_op:
@@ -71,6 +112,14 @@ def upgrade():
         batch_op.create_foreign_key(
             'fk_license_allocations_license_id_licenses', 'licenses', ['license_id'], ['id']
         )
+        if not is_mysql:
+            # The unique constraint is a named table constraint, not a
+            # standalone index - SQLite can only rename it via a full
+            # table recreate, so fold it into this batch.
+            batch_op.drop_constraint('uq_allocation_software_school', type_='unique')
+            batch_op.create_unique_constraint(
+                'uq_allocation_license_school', ['license_id', 'school_id']
+            )
 
 
 def downgrade():
@@ -81,6 +130,11 @@ def downgrade():
         batch_op.drop_constraint('fk_contracts_license_id_licenses', type_='foreignkey')
     with op.batch_alter_table('license_allocations', schema=None) as batch_op:
         batch_op.drop_constraint('fk_license_allocations_license_id_licenses', type_='foreignkey')
+        if not is_mysql:
+            batch_op.drop_constraint('uq_allocation_license_school', type_='unique')
+            batch_op.create_unique_constraint(
+                'uq_allocation_software_school', ['license_id', 'school_id']
+            )
 
     if is_mysql:
         op.execute("ALTER TABLE licenses RENAME INDEX ix_licenses_name TO ix_software_name")
@@ -96,6 +150,19 @@ def downgrade():
             "ALTER TABLE license_allocations "
             "RENAME INDEX uq_allocation_license_school TO uq_allocation_software_school"
         )
+    else:
+        op.drop_index('ix_licenses_name', table_name='licenses')
+        op.create_index('ix_software_name', 'licenses', ['name'])
+        op.drop_index('ix_licenses_status', table_name='licenses')
+        op.create_index('ix_software_status', 'licenses', ['status'])
+        op.drop_index('ix_licenses_vendor_id', table_name='licenses')
+        op.create_index('ix_software_vendor_id', 'licenses', ['vendor_id'])
+        op.drop_index('ix_licenses_expiration_date', table_name='licenses')
+        op.create_index('ix_software_expiration_date', 'licenses', ['expiration_date'])
+        op.drop_index('ix_contracts_license_id', table_name='contracts')
+        op.create_index('ix_contracts_software_id', 'contracts', ['license_id'])
+        op.drop_index('ix_license_allocations_license_id', table_name='license_allocations')
+        op.create_index('ix_license_allocations_software_id', 'license_allocations', ['license_id'])
 
     with op.batch_alter_table('contracts', schema=None) as batch_op:
         batch_op.alter_column('license_id', new_column_name='software_id',
