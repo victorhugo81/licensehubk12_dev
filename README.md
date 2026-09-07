@@ -121,7 +121,7 @@ uv run pytest                    # test suite
 - Set `APP_ENV=production` so `ProductionConfig` is selected (`DEBUG` off, cookies marked `Secure`, error pages never leak stack traces). The app now refuses to start if `APP_ENV` is unset, or if `production` is selected without a `SECRET_KEY` - it will not silently fall back to development settings.
 - Set `BEHIND_PROXY=true` if serving behind nginx/another reverse proxy (the documented setup below) so `ProxyFix` reads the real client IP from `X-Forwarded-*` headers - without it, rate limiting and audit-log IP addresses only ever see the proxy's own address.
 - Point `DATABASE_URL` at MySQL/MariaDB and run `flask db upgrade` against it before first launch.
-- Serve behind a WSGI server (`gunicorn` is already a dependency): `uv run gunicorn -w 4 -b 0.0.0.0:8000 run:app`.
+- Serve behind a WSGI server (`gunicorn` is already a dependency): `uv run gunicorn -w 4 -b 0.0.0.0:8000 main:app`.
 - Put a reverse proxy (nginx, etc.) in front for TLS termination and static file caching.
 - Logs are written to rotating files under `instance/logs/` — ship these to your log aggregator of choice.
 - If using the optional in-process scheduler, run only one worker with `SCHEDULER_ENABLED=True` to avoid duplicate notification runs; otherwise drive `flask run-checks` from an external scheduler.

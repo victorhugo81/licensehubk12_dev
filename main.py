@@ -9,6 +9,6 @@ if __name__ == "__main__":
             "mode - it has no protection against untrusted traffic and, "
             "with DEBUG on, an unauthenticated interactive Python debugger. "
             "Serve production with a real WSGI server instead, e.g.:\n"
-            "  uv run gunicorn -w 4 -b 0.0.0.0:8000 run:app"
+            "  uv run gunicorn -w 4 -b 0.0.0.0:8000 main:app"
         )
     app.run()
