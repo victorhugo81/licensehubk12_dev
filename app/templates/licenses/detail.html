@@ -94,7 +94,7 @@
               </td>
               <td>{{ ((a.allocated_count / lic.license_count) * 100) | round(1) if lic.license_count else 0 }}%</td>
               <td class="text-end">
-                <form method="post" action="{{ url_for('licenses.delete_allocation', id=lic.id, allocation_id=a.id) }}" onsubmit="return confirm('Remove this allocation?');">
+                <form method="post" action="{{ url_for('licenses.delete_allocation', id=lic.id, allocation_id=a.id) }}" data-confirm="Remove this allocation?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-x"></i></button>
                 </form>

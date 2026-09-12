@@ -10,7 +10,7 @@
   {% if current_user.has_role('Administrator', 'IT Administrator') %}
   <div class="d-flex gap-2">
     <a href="{{ url_for('contracts.edit_contract', vendor_id=contract.vendor_id, id=contract.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
-    <form method="post" action="{{ url_for('contracts.delete_contract', vendor_id=contract.vendor_id, id=contract.id) }}" onsubmit="return confirm('Delete this contract?');">
+    <form method="post" action="{{ url_for('contracts.delete_contract', vendor_id=contract.vendor_id, id=contract.id) }}" data-confirm="Delete this contract?">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
     </form>
@@ -53,7 +53,7 @@
         <a href="{{ url_for('contracts.download_file', id=contract.id) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-download"></i> Download</a>
         {% if current_user.has_role('Administrator', 'IT Administrator') %}
         <a href="{{ url_for('contracts.edit_contract', vendor_id=contract.vendor_id, id=contract.id) }}" class="btn btn-sm btn-outline-secondary">Replace</a>
-        <form method="post" action="{{ url_for('contracts.delete_file', vendor_id=contract.vendor_id, id=contract.id) }}" onsubmit="return confirm('Remove the attached contract file?');">
+        <form method="post" action="{{ url_for('contracts.delete_file', vendor_id=contract.vendor_id, id=contract.id) }}" data-confirm="Remove the attached contract file?">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <button class="btn btn-sm btn-outline-danger">Remove</button>
         </form>

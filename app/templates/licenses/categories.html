@@ -27,7 +27,7 @@
               <td>{{ c.name }}</td>
               <td>{{ c.licenses | length }}</td>
               <td class="text-end">
-                <form method="post" action="{{ url_for('licenses.delete_category', id=c.id) }}" onsubmit="return confirm('Delete this category?');">
+                <form method="post" action="{{ url_for('licenses.delete_category', id=c.id) }}" data-confirm="Delete this category?">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
                 </form>

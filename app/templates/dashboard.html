@@ -14,7 +14,7 @@
       {% if can_view_district_wide %}
       <div class="col-6 col-md">
         <label class="form-label small mb-1" for="school_id">School</label>
-        <select id="school_id" name="school_id" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="school_id" name="school_id" class="form-select form-select-sm">
           <option value="">All</option>
           {% for s in schools %}<option value="{{ s.id }}" {{ 'selected' if (request.args.get('school_id') | int(0)) == s.id }}>{{ s.name }}</option>{% endfor %}
         </select>
@@ -22,21 +22,21 @@
       {% endif %}
       <div class="col-6 col-md">
         <label class="form-label small mb-1" for="vendor_id">Vendor</label>
-        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="vendor_id" name="vendor_id" class="form-select form-select-sm">
           <option value="">All</option>
           {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if (request.args.get('vendor_id') | int(0)) == v.id }}>{{ v.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-6 col-md">
         <label class="form-label small mb-1" for="category_id">Product / Category</label>
-        <select id="category_id" name="category_id" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="category_id" name="category_id" class="form-select form-select-sm">
           <option value="">All</option>
           {% for c in categories %}<option value="{{ c.id }}" {{ 'selected' if (request.args.get('category_id') | int(0)) == c.id }}>{{ c.name }}</option>{% endfor %}
         </select>
       </div>
       <div class="col-6 col-md">
         <label class="form-label small mb-1" for="status">Status</label>
-        <select id="status" name="status" class="form-select form-select-sm" onchange="this.form.submit()">
+        <select id="status" name="status" class="form-select form-select-sm">
           <option value="">All</option>
           {% for s in statuses %}<option value="{{ s }}" {{ 'selected' if request.args.get('status') == s }}>{{ s }}</option>{% endfor %}
         </select>
@@ -47,6 +47,15 @@
     </form>
   </div>
 </div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  ['school_id', 'vendor_id', 'category_id', 'status'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) { el.addEventListener('change', function () { el.form.submit(); }); }
+  });
+})();
+</script>
 
 <div class="row g-3 mb-3">
   <div class="col-6 col-lg">

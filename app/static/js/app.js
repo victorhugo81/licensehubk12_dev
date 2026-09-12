@@ -29,4 +29,15 @@ document.addEventListener("DOMContentLoaded", function () {
       alert.close();
     }, 6000);
   });
+
+  // CSP's script-src has no 'unsafe-inline', which also blocks inline
+  // onsubmit="return confirm(...)" attribute handlers - use this delegated
+  // listener plus a data-confirm attribute on the form instead.
+  document.querySelectorAll("form[data-confirm]").forEach(function (form) {
+    form.addEventListener("submit", function (e) {
+      if (!window.confirm(form.dataset.confirm)) {
+        e.preventDefault();
+      }
+    });
+  });
 });

@@ -36,7 +36,7 @@
                 {% for s in statuses %}
                 <div class="form-check">
                   <input type="checkbox" class="form-check-input" name="status" value="{{ s }}" id="status_{{ s }}"
-                    {{ 'checked' if s in selected_statuses }} onchange="this.form.submit()">
+                    {{ 'checked' if s in selected_statuses }}>
                   <label class="form-check-label small" for="status_{{ s }}">{{ status_label(s) }}</label>
                 </div>
                 {% endfor %}
@@ -49,6 +49,14 @@
     </div>
   </form>
 </div></div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  document.querySelectorAll('input[name="status"]').forEach(function (el) {
+    el.addEventListener('change', function () { el.form.submit(); });
+  });
+})();
+</script>
 
 <div class="card">
   <div class="table-responsive">

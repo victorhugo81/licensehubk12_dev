@@ -9,7 +9,7 @@
   {% if current_user.has_role('Administrator', 'IT Administrator') %}
   <div class="d-flex gap-2">
     <a href="{{ url_for('schools.edit_school', id=school.id) }}" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
-    <form method="post" action="{{ url_for('schools.delete_school', id=school.id) }}" onsubmit="return confirm('Delete this school?');">
+    <form method="post" action="{{ url_for('schools.delete_school', id=school.id) }}" data-confirm="Delete this school?">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
     </form>

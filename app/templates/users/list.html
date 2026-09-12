@@ -11,15 +11,43 @@
 
 <div class="card mb-3"><div class="card-body">
   <form method="get" class="row g-2">
-    <div class="col-md-4"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search users…" value="{{ request.args.get('q', '') }}"></div>
-    <div class="col-md-2"><button class="btn btn-sm btn-outline-primary" type="submit">Search</button></div>
+    <div class="col-md"><input type="search" name="q" class="form-control form-control-sm" placeholder="Search users…" value="{{ request.args.get('q', '') }}"></div>
+    <div class="col-md">
+      <select id="roleIdFilter" name="role_id" class="form-select form-select-sm">
+        <option value="">All roles</option>
+        {% for r in roles %}<option value="{{ r.id }}" {{ 'selected' if (request.args.get('role_id') | int(0)) == r.id }}>{{ r.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md">
+      <select id="schoolIdFilter" name="school_id" class="form-select form-select-sm">
+        <option value="">All schools</option>
+        {% for s in schools %}<option value="{{ s.id }}" {{ 'selected' if (request.args.get('school_id') | int(0)) == s.id }}>{{ s.name }}</option>{% endfor %}
+      </select>
+    </div>
+    <div class="col-md">
+      <select id="statusFilter" name="status" class="form-select form-select-sm">
+        <option value="">All statuses</option>
+        <option value="active" {{ 'selected' if request.args.get('status') == 'active' }}>Active</option>
+        <option value="inactive" {{ 'selected' if request.args.get('status') == 'inactive' }}>Inactive</option>
+      </select>
+    </div>
+    <div class="col-md-auto"><a href="{{ url_for('users.list_users') }}" class="btn btn-sm btn-outline-secondary">Clear</a></div>
   </form>
 </div></div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  ['roleIdFilter', 'schoolIdFilter', 'statusFilter'].forEach(function (id) {
+    var el = document.getElementById(id);
+    el.addEventListener('change', function () { el.form.submit(); });
+  });
+})();
+</script>
 
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Name</th><th>Middle Name</th><th>Email</th><th>Role</th><th>School</th><th>Status</th><th></th></tr></thead>
+      <thead><tr><th>Name</th><th>Middle Name</th><th>Email</th><th>Role</th><th>School</th><th>Status</th><th>Action</th></tr></thead>
       <tbody>
         {% for u in users %}
         <tr>
