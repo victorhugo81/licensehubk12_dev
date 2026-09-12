@@ -147,7 +147,7 @@ Flask-Login sessions here are stateless signed cookies with no server-side revoc
 
 ### Templates (`app/templates/`)
 
-- `base.html` — full app shell (sidebar + topbar), used by all authenticated pages.
+- `base.html` — full app shell (sidebar + topbar), used by all authenticated pages. The sidebar's "Administration" section header is gated to `has_role('Administrator', 'IT Administrator', 'Curriculum Administrator')` (Curriculum Administrator is in that list solely so they still see **Categories**, which lives there and needs `manage_licenses`) — **Users**/**Settings** are each individually re-gated to `Administrator` only, and **Import CSV**/**Audit Log** to `Administrator`/`IT Administrator` only, so widening the section-level check again doesn't silently leak those links to a role that lacks the underlying permission. Notifications has no sidebar entry — it's reachable only via the topbar bell icon, to avoid duplicating the same link in two places.
 - `base_bare.html` — centered card layout with no nav, used by `login.html`, password reset, and `errors/*.html` (so a 403/404 renders sensibly for a logged-out visitor).
 - `includes/macros.html` — `field()` macro renders one Bootstrap-styled WTForms field with error display; use it in every form template instead of hand-rolling `<input>` markup.
 - `includes/pagination.html` / `includes/export_buttons.html` — build merged query-arg dicts for `url_for()`. Jinja's expression grammar rejects `dict(a, **b, key=c)` (positional arg + `**kwargs` + another kwarg together) — build the merged dict in a `{% set %}` first, then pass it as `**dict(that, key=c)`.
