@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Import Schools - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Import Schools from CSV</h1>
+  <a href="{{ url_for('schools.list_schools') }}" class="small"><i class="bi bi-arrow-left"></i> Back to Schools</a>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header">How it works</div>
+  <div class="card-body">
+    <ol class="small mb-0 ps-3">
+      <li>Download the template below and fill in one row per school.</li>
+      <li><code>site_code</code> is the match key — a code that already exists updates that school; a new code creates one.</li>
+      <li>Upload the completed file.</li>
+      <li>Review the preview — every row is validated before anything is written to the database.</li>
+      <li>Confirm the import. Rows with errors are never imported; rows with warnings are imported and flagged for review.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Upload file</div>
+      <div class="card-body">
+        <form method="post" enctype="multipart/form-data" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="mb-3">
+            {{ form.file.label(class="form-label") }}
+            {{ form.file(class="form-control") }}
+            {% for error in form.file.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+          {{ form.submit(class="btn btn-primary") }}
+          <a href="{{ url_for('static', filename='download/school_import_template.csv') }}" class="btn btn-outline-secondary"><i class="bi bi-download"></i> Download template</a>
+        </form>
+        <div class="d-flex gap-3 mt-3">
+          <a href="{{ url_for('school_imports.history') }}" class="small">View import history</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card">
+      <div class="card-header">Expected columns</div>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Column</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>site_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>School name.</td></tr>
+            <tr><td><code>site_acronyms</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Short nickname/abbreviation.</td></tr>
+            <tr><td><code>site_cds</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>State-assigned identifier (e.g. CA's CDS code).</td></tr>
+            <tr><td><code>site_code</code></td><td><span class="badge text-bg-danger">Required</span></td><td>Unique school code — the match key for updates.</td></tr>
+            <tr><td><code>site_address</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Street address.</td></tr>
+            <tr><td><code>sitecity</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>City.</td></tr>
+            <tr><td><code>sitestate</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>2-letter state.</td></tr>
+            <tr><td><code>sitezip</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>ZIP code.</td></tr>
+            <tr><td><code>prnfirstn</code> / <code>prnlastn</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Principal's first / last name.</td></tr>
+            <tr><td><code>email</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>School office email.</td></tr>
+            <tr><td><code>phone</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>School office phone.</td></tr>
+            <tr><td><code>site_type</code></td><td><span class="badge text-bg-danger">Required</span></td><td>One of: {{ school_types | join(', ') }} — or the shorthand <code>ES</code>/<code>MS</code>/<code>HS</code>.</td></tr>
+            <tr><td><code>grades</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Comma-separated grades served, e.g. "K,1,2,3".</td></tr>
+            <tr><td><code>student_count</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Enrollment count.</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -420,3 +420,19 @@ a { color: var(--bs-main-color-secondary); }
   background: var(--bs-main-color-primary);
   border-color: var(--bs-main-color-primary);
 }
+
+.import-dropzone {
+  border: 2px dashed var(--color-border);
+  background: var(--color-bg);
+  cursor: pointer;
+  transition: var(--transition-fast, background 0.15s ease, border-color 0.15s ease);
+}
+.import-dropzone:hover,
+.import-dropzone:focus-visible {
+  border-color: var(--bs-main-color-primary);
+  outline: none;
+}
+.import-dropzone-active {
+  border-color: var(--bs-main-color-primary);
+  background: var(--color-surface);
+}

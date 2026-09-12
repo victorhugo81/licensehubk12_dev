@@ -47,14 +47,10 @@
 </div>
 
 <div class="card mt-3">
-  <div class="card-header">Bulk User Import</div>
+  <div class="card-header">Bulk Import</div>
   <div class="card-body">
-    <p class="text-muted small">Create many user accounts at once from a CSV file, or configure an automated daily import over FTP/FTPS.</p>
-    <div class="d-flex gap-2">
-      <a href="{{ url_for('user_imports.upload') }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import CSV</a>
-      <a href="{{ url_for('user_imports.ftp_settings') }}" class="btn btn-outline-secondary"><i class="bi bi-arrow-repeat"></i> FTP Import Settings</a>
-      <a href="{{ url_for('user_imports.history') }}" class="btn btn-outline-secondary"><i class="bi bi-clock-history"></i> Import History</a>
-    </div>
+    <p class="text-muted small">Create many user accounts and/or schools at once from CSV files, or configure an automated daily users import over FTP/FTPS.</p>
+    <a href="{{ url_for('bulk_imports.index') }}" class="btn btn-outline-primary"><i class="bi bi-file-earmark-arrow-up"></i> Import Users &amp; Schools</a>
   </div>
 </div>
 {% endblock %}

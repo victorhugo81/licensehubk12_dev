@@ -89,6 +89,8 @@ def _register_blueprints(app):
     from app.routes.audit import audit_bp
     from app.routes.imports import imports_bp
     from app.routes.user_imports import user_imports_bp
+    from app.routes.school_imports import school_imports_bp
+    from app.routes.bulk_imports import bulk_imports_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(dashboard_bp)
@@ -103,6 +105,8 @@ def _register_blueprints(app):
     app.register_blueprint(audit_bp)
     app.register_blueprint(imports_bp)
     app.register_blueprint(user_imports_bp)
+    app.register_blueprint(school_imports_bp)
+    app.register_blueprint(bulk_imports_bp)
 
     app.register_blueprint(api_bp)
 

@@ -38,7 +38,7 @@ def test_ftp_sync_rejects_oversized_remote_file(app, db):
 def test_ftp_sync_creates_users_from_valid_remote_csv(app, db):
     with app.app_context():
         settings = _configured_settings(db)
-        csv_bytes = b"first_name,last_name,email,role,school\nJane,Doe,jane@example.com,Viewer,\n"
+        csv_bytes = b"first_name,last_name,email,role,site_name\nJane,Doe,jane@example.com,Viewer,\n"
 
         fake_ftp = MagicMock()
 

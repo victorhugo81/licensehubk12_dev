@@ -1,0 +1,3 @@
+site_name,site_acronyms,site_cds,site_code,site_address,sitecity,sitestate,sitezip,prnfirstn,prnlastn,email,phone,site_type
+Calexico High School,CHS,12345670123456,CHS-01,123 Main St,Calexico,CA,92231,Jane,Rivera,chs@example.org,7605551234,HS
+Rockwood Elementary,RES,12345670654321,RES-02,456 Oak Ave,Calexico,CA,92231,Sam,Torres,res@example.org,7605555678,ES

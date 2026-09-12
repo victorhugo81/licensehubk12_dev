@@ -1,19 +1,19 @@
 {% extends "base.html" %}
-{% block title %}User Import History - LicenseHubK12{% endblock %}
+{% block title %}School Import History - LicenseHubK12{% endblock %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
-  <h1 class="h4 mb-0">User Import History</h1>
-  <a href="{{ url_for('user_imports.upload') }}" class="small"><i class="bi bi-arrow-left"></i> Back to Import Users</a>
+  <h1 class="h4 mb-0">School Import History</h1>
+  <a href="{{ url_for('school_imports.upload') }}" class="small"><i class="bi bi-arrow-left"></i> Back to Import Schools</a>
 </div>
 <div class="card">
   <div class="table-responsive">
     <table class="table table-hover mb-0">
-      <thead><tr><th>Source</th><th>Imported By</th><th>Date</th><th>Total</th><th>Valid</th><th>Warnings</th><th>Errors</th><th>Created</th><th>Updated</th></tr></thead>
+      <thead><tr><th>File</th><th>Imported By</th><th>Date</th><th>Total</th><th>Valid</th><th>Warnings</th><th>Errors</th><th>Created</th><th>Updated</th></tr></thead>
       <tbody>
         {% for r in records %}
         <tr>
           <td>{{ r.filename }}</td>
-          <td>{{ r.imported_by.full_name if r.imported_by else 'FTP (scheduled)' }}</td>
+          <td>{{ r.imported_by.full_name if r.imported_by else '—' }}</td>
           <td>{{ r.imported_at | timesince }}</td>
           <td>{{ r.total_records }}</td>
           <td class="text-success">{{ r.valid_records }}</td>
@@ -23,7 +23,7 @@
           <td>{{ r.details.get('updated', '—') }}</td>
         </tr>
         {% else %}
-        <tr><td colspan="9" class="text-muted text-center py-4">No user imports yet.</td></tr>
+        <tr><td colspan="9" class="text-muted text-center py-4">No school imports yet.</td></tr>
         {% endfor %}
       </tbody>
     </table>

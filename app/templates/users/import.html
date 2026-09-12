@@ -5,6 +5,20 @@
   <h1 class="h4 mb-0">Import Users from CSV</h1>
   <a href="{{ url_for('users.list_users') }}" class="small"><i class="bi bi-arrow-left"></i> Back to Users</a>
 </div>
+
+<div class="card mb-3">
+  <div class="card-header">How it works</div>
+  <div class="card-body">
+    <ol class="small mb-0 ps-3">
+      <li>Download the template below and fill in one row per person.</li>
+      <li>Upload the completed file.</li>
+      <li>Review the preview — every row is validated before anything is written to the database.</li>
+      <li>Confirm the import. Rows with errors are never imported. A row whose email already exists updates that user's name/status/school — it never changes their role.</li>
+      <li>Each new account gets a random password nobody is shown — share the password-set link from the results page with that person instead.</li>
+    </ol>
+  </div>
+</div>
+
 <div class="row g-3">
   <div class="col-lg-6">
     <div class="card">
@@ -30,17 +44,19 @@
   <div class="col-lg-6">
     <div class="card">
       <div class="card-header">Expected columns</div>
-      <div class="card-body">
-        <p class="small text-muted">The CSV must include these columns (header row required):</p>
-        <pre class="bg-body-secondary p-2 rounded small">first_name,last_name,email,role,school
-Jane,Doe,jane.doe@example.org,Viewer,
-John,Smith,john.smith@example.org,School Administrator,Calexico High School</pre>
-        <p class="small text-muted mb-0">
-          <code>school</code> is only required when <code>role</code> is School Administrator. Every row is validated
-          before anything is written to the database. Rows with errors are never imported. New accounts get a random
-          password nobody is shown - each one receives a password-set link (shown after import) instead of a temporary
-          password.
-        </p>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Column</th><th>Required</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>first_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>First name.</td></tr>
+            <tr><td><code>middle_name</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Middle name.</td></tr>
+            <tr><td><code>last_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>Last name.</td></tr>
+            <tr><td><code>email</code></td><td><span class="badge text-bg-danger">Required</span></td><td>The match key — an email that already exists updates that user's name/status/school instead of creating a new one. Role is never changed for an existing user.</td></tr>
+            <tr><td><code>site_name</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Exact school name as it appears in the system. Any role can have a school on file — it's just informational, except for a new School Administrator, where it's required.</td></tr>
+            <tr><td><code>status</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Active/Inactive — defaults to Active for a new user; left unchanged for an existing one.</td></tr>
+            <tr><td><code>role</code></td><td><span class="badge text-bg-secondary">Optional, not in the standard export</span></td><td>Administrator, IT Administrator, Curriculum Administrator, School Administrator, or Viewer. Only used when creating a new user (defaults to Viewer if omitted); ignored for an existing one. Other columns in the file are ignored.</td></tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </div>

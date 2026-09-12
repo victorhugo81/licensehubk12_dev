@@ -1,0 +1,55 @@
+{% from "includes/macros.html" import field %}
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="card">
+      <div class="card-header">Connection settings</div>
+      <div class="card-body">
+        <form method="post" action="{{ url_for('user_imports.ftp_settings') }}" novalidate>
+          {{ form.hidden_tag() }}
+          <div class="row">
+            {{ field(form.is_enabled, col="col-12") }}
+            {{ field(form.host, col="col-md-8") }}
+            {{ field(form.port, col="col-md-4") }}
+            {{ field(form.username, col="col-md-6") }}
+            {{ field(form.password, col="col-md-6") }}
+            {{ field(form.remote_path, col="col-12") }}
+            {{ field(form.use_tls, col="col-12") }}
+          </div>
+          {{ form.submit(class="btn btn-primary") }}
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="card">
+      <div class="card-header">Status</div>
+      <div class="card-body">
+        <dl class="row mb-0 small">
+          <dt class="col-5">Enabled</dt>
+          <dd class="col-7">{{ 'Yes' if settings.is_enabled else 'No' }}</dd>
+          <dt class="col-5">Last run</dt>
+          <dd class="col-7">{{ settings.last_run_at | timesince if settings.last_run_at else 'Never' }}</dd>
+          <dt class="col-5">Last result</dt>
+          <dd class="col-7">
+            {% if settings.last_status %}
+            <span class="badge {{ 'text-bg-success' if settings.last_status == 'success' else 'text-bg-danger' }}">{{ settings.last_status }}</span>
+            {% else %}—{% endif %}
+          </dd>
+          <dt class="col-5">Message</dt>
+          <dd class="col-7">{{ settings.last_message or '—' }}</dd>
+        </dl>
+        <hr>
+        <form method="post" action="{{ url_for('user_imports.ftp_run') }}">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="btn btn-outline-primary w-100"><i class="bi bi-arrow-repeat"></i> Run import now</button>
+        </form>
+        <p class="small text-muted mt-2 mb-0">
+          When enabled, this import also runs automatically once a day if the scheduler is turned on for this
+          deployment (SCHEDULER_ENABLED). This currently pulls the users CSV only — there's no scheduled FTP
+          pull for schools.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>

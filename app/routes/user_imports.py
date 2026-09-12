@@ -70,7 +70,7 @@ def commit():
     with open(temp_path, "r", encoding="utf-8-sig", errors="replace") as f:
         preview = validate_csv(f)
 
-    created, skipped, results = commit_import(preview)
+    created, updated, results = commit_import(preview)
 
     history = ImportHistory(
         kind="user", filename=filename, imported_by_id=current_user.id,
@@ -78,16 +78,16 @@ def commit():
         warning_records=preview.warnings, error_records=preview.errors,
         status="completed",
     )
-    history.details = {"created": created, "skipped": skipped, "results": results}
+    history.details = {"created": created, "updated": updated, "results": results}
     db.session.add(history)
-    log_action("import", "user", None, {"filename": filename, "created": created, "skipped": skipped})
+    log_action("import", "user", None, {"filename": filename, "created": created, "updated": updated})
     db.session.commit()
 
     os.remove(temp_path)
     session.pop("user_import_token", None)
     session.pop("user_import_filename", None)
 
-    return render_template("users/import_results.html", results=results, skipped=skipped)
+    return render_template("users/import_results.html", results=results, updated=updated)
 
 
 @user_imports_bp.route("/cancel", methods=["POST"])

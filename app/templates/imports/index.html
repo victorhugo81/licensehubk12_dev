@@ -1,0 +1,168 @@
+{% extends "base.html" %}
+{% block title %}Bulk Import - LicenseHubK12{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h4 mb-0">Bulk Import</h1>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-table"></i> users.csv</span>
+    <a href="{{ url_for('static', filename='download/user_import_template.csv') }}" class="btn btn-sm btn-primary"><i class="bi bi-download"></i> Users Template</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Column</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>first_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>First name</td><td>Maria</td></tr>
+        <tr><td><code>middle_name</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Middle name</td><td>Elena</td></tr>
+        <tr><td><code>last_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>Last name</td><td>Garcia</td></tr>
+        <tr><td><code>email</code></td><td><span class="badge text-bg-danger">Required</span></td><td>The match key — an email that already exists updates that user's name/status/school instead of creating a new one. Role is never changed for an existing user.</td><td>m.garcia@school.edu</td></tr>
+        <tr><td><code>site_name</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Exact school name as it appears in the system. Any role can have a school on file for reference — required only for a new School Administrator</td><td>Lincoln Elementary</td></tr>
+        <tr><td><code>status</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Account status — defaults to <strong>Active</strong> for a new user if omitted; left unchanged for an existing one</td><td>Active</td></tr>
+        <tr><td><code>role</code></td><td><span class="badge text-bg-secondary">Optional (not in the standard export)</span></td><td>Administrator, IT Administrator, Curriculum Administrator, School Administrator, or Viewer — only used to create a new user (defaults to Viewer if omitted); ignored for an existing one. Any other column in the file is ignored.</td><td>Viewer</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card mb-3">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-table"></i> sites.csv</span>
+    <a href="{{ url_for('static', filename='download/school_import_template.csv') }}" class="btn btn-sm btn-primary"><i class="bi bi-download"></i> Sites Template</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead><tr><th>Column</th><th>Required</th><th>Description</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>site_name</code></td><td><span class="badge text-bg-danger">Required</span></td><td>School name</td><td>Calexico High School</td></tr>
+        <tr><td><code>site_acronyms</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Short nickname/abbreviation</td><td>CHS</td></tr>
+        <tr><td><code>site_cds</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>State-assigned identifier, e.g. CA's County-District-School code</td><td>12345670123456</td></tr>
+        <tr><td><code>site_code</code></td><td><span class="badge text-bg-danger">Required</span></td><td>Unique code — the match key for updates</td><td>CHS-01</td></tr>
+        <tr><td><code>site_address</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Street address</td><td>123 Main St</td></tr>
+        <tr><td><code>sitecity</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>City</td><td>Calexico</td></tr>
+        <tr><td><code>sitestate</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>2-letter state</td><td>CA</td></tr>
+        <tr><td><code>sitezip</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>ZIP code</td><td>92231</td></tr>
+        <tr><td><code>prnfirstn</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Principal's first name</td><td>Jane</td></tr>
+        <tr><td><code>prnlastn</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>Principal's last name</td><td>Rivera</td></tr>
+        <tr><td><code>email</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>School office email</td><td>chs@example.org</td></tr>
+        <tr><td><code>phone</code></td><td><span class="badge text-bg-secondary">Optional</span></td><td>School office phone</td><td>(760) 555-1234</td></tr>
+        <tr><td><code>site_type</code></td><td><span class="badge text-bg-danger">Required</span></td><td>One of: {{ school_types | join(', ') }} — or the shorthand <code>ES</code>/<code>MS</code>/<code>HS</code></td><td>HS</td></tr>
+        <tr><td><code>grades</code></td><td><span class="badge text-bg-secondary">Optional (not in the standard export)</span></td><td>Comma-separated grades served</td><td>9,10,11,12</td></tr>
+        <tr><td><code>student_count</code></td><td><span class="badge text-bg-secondary">Optional (not in the standard export)</span></td><td>Enrollment count</td><td>1200</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+  <li class="nav-item" role="presentation">
+    <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#manualUploadPane" type="button" role="tab"><i class="bi bi-file-earmark-arrow-up"></i> Manual File Upload</button>
+  </li>
+  <li class="nav-item" role="presentation">
+    <button class="nav-link" data-bs-toggle="tab" data-bs-target="#ftpPane" type="button" role="tab"><i class="bi bi-hdd-network"></i> FTP</button>
+  </li>
+</ul>
+
+<div class="tab-content mb-3">
+  <div class="tab-pane fade show active" id="manualUploadPane" role="tabpanel">
+    <div class="card">
+      <div class="card-body">
+        <p class="small text-muted">
+          Select or drag both <code>users.csv</code> and <code>sites.csv</code> at once, or just one of them. Sites are
+          processed before users, so a user row referencing a school from the same upload can already resolve it.
+          Each file is validated first — you'll see a full preview and have to confirm before anything is written to
+          the database.
+        </p>
+        <form method="post" action="{{ url_for('bulk_imports.index') }}" enctype="multipart/form-data" novalidate id="bulkImportForm">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <div id="importDropzone" class="import-dropzone text-center p-5 rounded" tabindex="0" role="button" aria-label="Click or drag and drop your CSV files here">
+            <i class="bi bi-file-earmark-arrow-up display-5 text-muted"></i>
+            <p class="fw-semibold mb-1 mt-2">Click or drag and drop your CSV files here</p>
+            <p class="small text-muted mb-0">Accepts <strong>users.csv</strong> and/or <strong>sites.csv</strong> — maximum {{ max_content_length_mb }} MB each</p>
+            <input type="file" name="files" id="importFileInput" accept=".csv" multiple class="visually-hidden">
+          </div>
+          <ul id="importFileList" class="small mt-2 mb-3 ps-3"></ul>
+          <button type="submit" class="btn btn-primary">Upload</button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane fade" id="ftpPane" role="tabpanel">
+    {% with form = ftp_form, settings = ftp_settings %}
+      {% include "includes/ftp_settings_panel.html" %}
+    {% endwith %}
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span><i class="bi bi-clock-history"></i> Review Upload Log</span>
+    <span class="small text-muted">{{ records | length }} total record{{ 's' if records | length != 1 }}</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Date / File</th><th>Uploaded By</th><th>Total Records</th><th>Result</th><th>Status</th></tr></thead>
+      <tbody>
+        {% for r in records %}
+        <tr>
+          <td>
+            {{ '[Sites] ' if r.kind == 'school' }}{{ r.filename }}<br>
+            <span class="small text-muted">{{ r.imported_at | timesince }}</span>
+          </td>
+          <td>{{ r.imported_by.full_name if r.imported_by else 'FTP (scheduled)' }}</td>
+          <td>{{ r.total_records }}</td>
+          <td class="small">{{ r.details.get('created', 0) }} added, {{ r.details.get('updated', 0) }} updated</td>
+          <td><span class="badge text-bg-success">{{ r.status | title }}</span></td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" class="text-muted text-center py-4">No imports yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script nonce="{{ csp_nonce }}">
+(function () {
+  var dropzone = document.getElementById('importDropzone');
+  var input = document.getElementById('importFileInput');
+  var list = document.getElementById('importFileList');
+
+  function renderList() {
+    list.innerHTML = '';
+    Array.prototype.forEach.call(input.files, function (file) {
+      var li = document.createElement('li');
+      li.textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+      list.appendChild(li);
+    });
+  }
+
+  dropzone.addEventListener('click', function () { input.click(); });
+  dropzone.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); }
+  });
+  input.addEventListener('change', renderList);
+
+  ['dragenter', 'dragover'].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) {
+      e.preventDefault();
+      dropzone.classList.add('import-dropzone-active');
+    });
+  });
+  ['dragleave', 'drop'].forEach(function (evt) {
+    dropzone.addEventListener(evt, function (e) {
+      e.preventDefault();
+      dropzone.classList.remove('import-dropzone-active');
+    });
+  });
+  dropzone.addEventListener('drop', function (e) {
+    if (e.dataTransfer && e.dataTransfer.files.length) {
+      input.files = e.dataTransfer.files;
+      renderList();
+    }
+  });
+})();
+</script>
+{% endblock %}

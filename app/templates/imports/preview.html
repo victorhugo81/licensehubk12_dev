@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}Import Preview - LicenseHubK12{% endblock %}
+{% block content %}
+<h1 class="h4 mb-3">Import Preview</h1>
+
+{% macro stat_row(preview) %}
+<div class="row g-3 mb-3">
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value">{{ preview.total }}</div><div class="stat-label">Records Found</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value text-success">{{ preview.valid }}</div><div class="stat-label">Valid</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value" style="color: var(--status-warning);">{{ preview.warnings }}</div><div class="stat-label">Warnings</div></div></div>
+  <div class="col-6 col-md-3"><div class="stat-tile"><div class="stat-value text-danger">{{ preview.errors }}</div><div class="stat-label">Errors</div></div></div>
+</div>
+{% endmacro %}
+
+{# {% set %} inside a nested {% if %} block doesn't propagate back out to
+   this outer scope in Jinja - a namespace object is the standard
+   workaround for mutable state that needs to cross block boundaries. #}
+{% set ns = namespace(any_importable=false) %}
+
+{% if school_preview %}
+<h2 class="h6">Sites — {{ school_filename }}</h2>
+{% if school_preview.column_errors %}
+<div class="alert alert-danger">{% for err in school_preview.column_errors %}<div>{{ err }}</div>{% endfor %}</div>
+{% else %}
+{{ stat_row(school_preview) }}
+<div class="card mb-4">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Row</th><th>Name</th><th>Code</th><th>Type</th><th>Status</th><th>Messages</th></tr></thead>
+      <tbody>
+        {% for r in school_preview.rows %}
+        <tr class="{{ 'table-danger' if r.status == 'error' else 'table-warning' if r.status == 'warning' else '' }}">
+          <td>{{ r.row_number }}</td>
+          <td>{{ r.data.site_name }}</td>
+          <td>{{ r.data.site_code }}</td>
+          <td>{{ r.data.site_type }}</td>
+          <td><span class="badge {{ 'text-bg-danger' if r.status == 'error' else 'text-bg-warning' if r.status == 'warning' else 'text-bg-success' }}">{{ r.status }}</span></td>
+          <td class="small">{{ r.messages | join('; ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% set ns.any_importable = ns.any_importable or (school_preview.valid + school_preview.warnings > 0) %}
+{% endif %}
+{% endif %}
+
+{% if user_preview %}
+<h2 class="h6">Users — {{ user_filename }}</h2>
+{% if user_preview.column_errors %}
+<div class="alert alert-danger">{% for err in user_preview.column_errors %}<div>{{ err }}</div>{% endfor %}</div>
+{% else %}
+{{ stat_row(user_preview) }}
+<div class="card mb-4">
+  <div class="table-responsive">
+    <table class="table table-sm table-hover mb-0">
+      <thead><tr><th>Row</th><th>Name</th><th>Email</th><th>Role</th><th>School</th><th>Status</th><th>Messages</th></tr></thead>
+      <tbody>
+        {% for r in user_preview.rows %}
+        <tr class="{{ 'table-danger' if r.status == 'error' else 'table-warning' if r.status == 'warning' else '' }}">
+          <td>{{ r.row_number }}</td>
+          <td>{{ r.data.first_name }} {{ r.data.last_name }}</td>
+          <td>{{ r.data.email }}</td>
+          <td>{{ r.data.role }}</td>
+          <td>{{ r.data.school }}</td>
+          <td><span class="badge {{ 'text-bg-danger' if r.status == 'error' else 'text-bg-warning' if r.status == 'warning' else 'text-bg-success' }}">{{ r.status }}</span></td>
+          <td class="small">{{ r.messages | join('; ') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% set ns.any_importable = ns.any_importable or (user_preview.valid + user_preview.warnings > 0) %}
+{% endif %}
+{% endif %}
+
+<div class="d-flex gap-2">
+  <form method="post" action="{{ url_for('bulk_imports.commit') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-primary" {{ 'disabled' if not ns.any_importable }}>Confirm import</button>
+  </form>
+  <form method="post" action="{{ url_for('bulk_imports.cancel') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit" class="btn btn-outline-secondary">Cancel</button>
+  </form>
+</div>
+{% endblock %}

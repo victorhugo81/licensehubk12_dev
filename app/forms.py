@@ -72,10 +72,11 @@ class ChangePasswordForm(FlaskForm):
 
 class UserForm(FlaskForm):
     first_name = StringField("First name", validators=[DataRequired(), Length(max=100)])
+    middle_name = StringField("Middle name", validators=[Optional(), Length(max=100)])
     last_name = StringField("Last name", validators=[DataRequired(), Length(max=100)])
     email = StringField("Email", validators=[DataRequired(), Email(), Length(max=255)])
     role_id = SelectField("Role", coerce=int, validators=[DataRequired()])
-    school_id = SelectField("School (School Administrator only)", coerce=int, validators=[Optional()])
+    school_id = SelectField("School", coerce=int, validators=[Optional()])
     is_active_account = BooleanField("Account active", default=True)
     password = PasswordField("Password", validators=[Optional(), Length(min=10), not_common_password])
     submit = SubmitField("Save user")

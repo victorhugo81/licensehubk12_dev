@@ -14,7 +14,7 @@ PER_PAGE = 20
 
 def _form_data(u):
     return {
-        "first_name": u.first_name, "last_name": u.last_name, "email": u.email,
+        "first_name": u.first_name, "middle_name": u.middle_name, "last_name": u.last_name, "email": u.email,
         "role_id": u.role_id, "school_id": u.school_id, "is_active_account": u.is_active_account,
     }
 
@@ -44,7 +44,8 @@ def add_user():
             form.email.errors.append("A user with this email already exists.")
         else:
             user = User(
-                first_name=form.first_name.data, last_name=form.last_name.data,
+                first_name=form.first_name.data, middle_name=form.middle_name.data.strip() or None,
+                last_name=form.last_name.data,
                 email=form.email.data.strip().lower(), role_id=form.role_id.data,
                 school_id=form.school_id.data or None, is_active_account=form.is_active_account.data,
             )
@@ -74,6 +75,7 @@ def edit_user(id):
             return render_template("users/form.html", form=form, user=user)
 
         user.first_name = form.first_name.data
+        user.middle_name = form.middle_name.data.strip() or None
         user.last_name = form.last_name.data
         user.email = form.email.data.strip().lower()
         user.role_id = form.role_id.data

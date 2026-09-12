@@ -107,6 +107,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
     first_name = db.Column(db.String(100), nullable=False)
+    middle_name = db.Column(db.String(100))
     last_name = db.Column(db.String(100), nullable=False)
 
     role_id = db.Column(db.Integer, db.ForeignKey("roles.id"), nullable=False)
@@ -185,7 +186,16 @@ class School(db.Model):
     code = db.Column(db.String(30), unique=True, nullable=False)
     school_type = db.Column(db.String(30), nullable=False, default="Elementary")
     address = db.Column(db.String(255))
+    city = db.Column(db.String(100))
+    state = db.Column(db.String(2))
+    zip_code = db.Column(db.String(10))
     principal = db.Column(db.String(150))
+    email = db.Column(db.String(255))
+    phone = db.Column(db.String(30))
+    acronym = db.Column(db.String(20))
+    # State-assigned identifier (e.g. CA's County-District-School code) -
+    # optional, district-specific, never used to look anything up in-app.
+    cds_code = db.Column(db.String(30))
     grades = db.Column(db.String(50))
     student_count = db.Column(db.Integer, default=0)
     is_active = db.Column(db.Boolean, default=True, nullable=False)

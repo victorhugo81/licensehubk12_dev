@@ -6,6 +6,7 @@
   </picture>
 </p>
 
+
 # LicenseHubK12
 
 A software license management platform for K-12 school districts. IT, curriculum, and district administrators use it to track educational software licenses, contracts, vendors, per-school allocations, renewals, and spend — one place to answer *"what do we own, who's using it, and what needs renewing?"*
@@ -19,7 +20,7 @@ Built as part of the same suite as TrackItK12, AssistItK12, and AnalyticsK12, an
 - **License utilization** — per-license breakdown with a Chart.js chart of allocation by school.
 - **Schools, vendors, and contracts** — full CRUD, following the district's real setup order (School → Vendor → Contract → License): contracts are created under a vendor and can bundle multiple license titles, with vendor pages rolling up spend and expiring licenses, and contracts tracking vendor contact and renewal/cancellation deadlines. Each contract can also have the signed agreement (PDF or Word) attached, downloadable from its detail page.
 - **CSV import** — two-phase (preview, then commit) bulk import of license/allocation data; invalid rows are never written to the database.
-- **Bulk user import** — create many user accounts at once from a CSV file, or configure a scheduled FTP/FTPS pull that runs the same import automatically; new accounts get a password-set link instead of a visible temporary password (Settings > Bulk User Import).
+- **Bulk import (users & schools)** — one combined page (Settings > Bulk Import, or the "Import CSV" button on the Users/Schools lists) to upload a users CSV and/or a sites CSV together in one drag-and-drop drop, with a shared preview before anything is written; sites are always processed first so a user row can reference a school from the same upload. A user CSV row is matched by email: an unrecognized email creates a new account (password-set link instead of a visible temporary password, defaulting to the Viewer role if none is given) and a matching email updates that person's name/status/school — never their role, which a CSV re-upload can't grant or revoke. A sites CSV row whose code already exists updates that school instead of duplicating it. A scheduled FTP/FTPS pull is also available for the users side.
 - **Reports** — inventory, expiring licenses, utilization, spending (by contract/vendor), and school allocation, each exportable to CSV, Excel, and PDF.
 - **Notifications** — generated for license/contract expirations, renewal deadlines, high/over utilization, unused licenses, and new licenses being added; each notification is clickable (marks it read and opens the license/contract it's about), and every category can be turned on/off independently (Settings > Notification Settings).
 - **Role-based access control** — Administrator, IT Administrator, Curriculum Administrator, School Administrator, and Viewer roles, enforced at the route-decorator level (not just hidden UI). School Administrators can additionally create (but not edit/delete) vendors, contracts, and licenses, scoped to their own school.
